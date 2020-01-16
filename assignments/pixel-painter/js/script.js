@@ -18,6 +18,7 @@ let currentKey = "";
 window.onload = setup;
 
 document.addEventListener('keydown', rotate);
+document.addEventListener('keydown', typed);
 
 function setup()
 {
@@ -80,4 +81,9 @@ function rotate(e)
   {
     pixels[i].style.transform = `rotate(${rotation}deg)`;
   }
+}
+
+function typed(e)
+{
+  currentKey = e.keyCode;
 }
