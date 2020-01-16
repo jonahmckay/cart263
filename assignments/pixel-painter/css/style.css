@@ -1,0 +1,12 @@
+body {
+
+}
+
+.pixel
+{
+  background-color: black;
+  width: 30px;
+  height: 30px;
+  float: left;
+  margin:0;
+}
