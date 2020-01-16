@@ -25,6 +25,7 @@ function setup()
     document.body.appendChild(newPixel);
 
     newPixel.addEventListener('mouseover', paint);
+    newPixel.addEventListener('click', removePixel);
   }
 }
 
@@ -44,4 +45,9 @@ function paint(e)
 function resetPixel(pixel)
 {
   pixel.style.backgroundColor = pixelDefaultColor;
+}
+
+function removePixel(e)
+{
+  e.target.style.opacity = "0";
 }
