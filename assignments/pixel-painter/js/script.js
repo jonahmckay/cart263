@@ -13,6 +13,7 @@ A simple pixel painting web application.
 let pixelDefaultColor = 'black'
 
 let rotation = 0;
+let currentKey = "";
 
 window.onload = setup;
 
