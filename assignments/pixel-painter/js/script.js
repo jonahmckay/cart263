@@ -31,6 +31,7 @@ function setup()
     document.body.appendChild(newPixel);
 
     newPixel.addEventListener('mouseover', paint);
+    newPixel.addEventListener('mouseover', addText);
     newPixel.addEventListener('click', removePixel);
   }
 }
@@ -86,4 +87,9 @@ function rotate(e)
 function typed(e)
 {
   currentKey = e.keyCode;
+}
+
+function addText(e)
+{
+  e.target.innerHTML += String.fromCharCode(currentKey);
 }
