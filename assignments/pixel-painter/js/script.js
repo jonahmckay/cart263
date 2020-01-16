@@ -16,6 +16,8 @@ let rotation = 0;
 
 window.onload = setup;
 
+document.addEventListener('keydown', rotate);
+
 function setup()
 {
   console.log("hmm");
@@ -52,4 +54,29 @@ function resetPixel(pixel)
 function removePixel(e)
 {
   e.target.style.opacity = "0";
+}
+
+function rotate(e)
+{
+
+  if (e.keyCode !== 37 && e.keyCode !== 39)
+  {
+    return false;
+  }
+
+  let pixels = document.getElementsByClassName('pixel');
+
+  if (e.keyCode === 37)
+  {
+    rotation += -1;
+  }
+  else if (e.keyCode === 39)
+  {
+    rotation += 1;
+  }
+
+  for (let i = 0; i < pixels.length; i++)
+  {
+    pixels[i].style.transform = `rotate(${rotation}deg)`;
+  }
 }
