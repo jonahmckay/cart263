@@ -12,6 +12,8 @@ A simple pixel painting web application.
 //no magic strings!
 let pixelDefaultColor = 'black'
 
+let rotation = 0;
+
 window.onload = setup;
 
 function setup()
