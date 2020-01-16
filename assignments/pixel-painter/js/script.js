@@ -11,7 +11,6 @@ A simple pixel painting web application.
 
 //no magic strings!
 let pixelDefaultColor = 'black'
-let pixelActiveColor = 'white';
 
 window.onload = setup;
 
@@ -32,7 +31,12 @@ function setup()
 function paint(e)
 {
   let pixel = e.target;
-  pixel.style.backgroundColor = pixelActiveColor;
+
+  let r = Math.random()*255;
+  let g = Math.random()*255;
+  let b = Math.random()*255;
+
+  pixel.style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
 
   setTimeout(resetPixel, 1000, pixel);
 }
