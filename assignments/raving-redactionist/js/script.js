@@ -29,7 +29,7 @@ function update()
 
 function updateSpan()
 {
-  if ($("redacted").length == 0)
+  if ($(".redacted").length == 0)
   {
     endGame();
   }
