@@ -12,7 +12,8 @@ function setup()
 {
   $redactedText = $(".redacted");
   setInterval(update, 500);
-  $redactedText.each(updateSpan).on("click", spanClicked);
+  $redactedText.on("click", spanClicked);
+  $(".secret").on("mouseover", secretHover);
   secretsTotal = $(".secret").length;
   $("#totalSecrets").text(secretsTotal);
 }
@@ -34,4 +35,9 @@ function updateSpan()
 function spanClicked()
 {
   $(this).attr("class", "redacted");
+}
+
+function secretHover()
+{
+
 }
