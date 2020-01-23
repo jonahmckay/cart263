@@ -2,19 +2,24 @@
 
 $(document).ready(setup);
 
-let $spans = undefined;
+let $redactedText = undefined;
+
+let secretsFound = 0;
+let secretsTotal = undefined;
 
 function setup()
 
 {
-  $spans = $("span");
+  $redactedText = $(".redacted");
   setInterval(update, 500);
-  $spans.each(updateSpan).on("click", spanClicked);
+  $redactedText.each(updateSpan).on("click", spanClicked);
+  secretsTotal = $(".secret").length;
+  $("#totalSecrets").text(secretsTotal);
 }
 
 function update()
 {
-  $spans.each(updateSpan);
+  $redactedText.each(updateSpan);
 }
 
 function updateSpan()
