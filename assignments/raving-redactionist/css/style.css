@@ -1,0 +1,18 @@
+body
+{
+  font-family: monospace;
+  width:800px;
+  margin: 30px;
+}
+
+.redacted
+{
+  background-color: black;
+  color: rgb(0, 0, 0, 0);
+}
+
+.revealed
+{
+  background-color: rgb(0, 0, 0, 0);
+  color: red;
+}
