@@ -26,15 +26,17 @@ function setup()
 
 }
 
-//Global update function. Checks if game over and does a redacted text tick to
-//randomly reveal some.
+//Global update function
 function update()
 {
+  //Check if all redacted texts are revealed (or technically, if there were
+  //never any to begin with). If so, end the game in a loss.
   if ($(".redacted").length == 0)
   {
     gameOver();
   }
 
+  //Update each piece of redacted text.
   $redactedText.each(updateRedactedText);
 }
 
