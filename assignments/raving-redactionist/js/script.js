@@ -55,5 +55,7 @@ function secretHover()
 
 function endGame()
 {
-
+  $("body").addClass("disabledGame");
+  $(".secret").off("mouseover");
+  $(".revealed").off("click");
 }

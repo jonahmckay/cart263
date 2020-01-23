@@ -21,3 +21,9 @@ body
 {
   background-color: yellow;
 }
+
+.disabledGame
+{
+  background-color: black;
+  color: white;
+}
