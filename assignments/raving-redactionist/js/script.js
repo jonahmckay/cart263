@@ -39,5 +39,8 @@ function spanClicked()
 
 function secretHover()
 {
-
+  $(this).addClass("found");
+  $(this).off("mouseover");
+  secretsFound++;
+  $("#foundSecrets").text(secretsFound);
 }
