@@ -12,6 +12,8 @@ Exploring the existential nature of software dependencies
 
 $(document).ready(setup);
 
+let basePackageName;
+
 function generateBasePackageName()
 {
   //Function for generating a package name that is
@@ -55,6 +57,12 @@ function generatePackageName(names)
   return `${companyChosen} ${conventionChosen} ${utilityChosen}`;
 }
 
+function setBasePackageName(name)
+{
+  basePackageName = name;
+  $(".xashName").text(name);
+}
 function setup() {
   console.log(generateBasePackageName());
+  setBasePackageName(generateBasePackageName());
 }
