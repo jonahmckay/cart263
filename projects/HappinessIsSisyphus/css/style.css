@@ -1,8 +1,42 @@
 body {
   background-color: lightgray;
   font-family: Arial, sans-serif;
+  margin: 0;
 }
 
+#downloadDialog
+{
+  float: right;
+  background-color: white;
+  width:400px;
+  height:120px;
+}
+
+.downloadedPackageLine
+{
+
+}
+
+.downloadIcon
+{
+  width: 100px;
+  height: 100px;
+  margin: 10px;
+  display: inline-block;
+}
+
+.downloadInfoBlock
+{
+  margin: 10px;
+  height: 100px;
+  display: inline-block;
+  vertical-align: top;
+}
+.downloadProgressBar
+{
+  position: relative;
+  bottom: -70px;
+}
 #downloadXashBox
 {
   background-color: gray;
