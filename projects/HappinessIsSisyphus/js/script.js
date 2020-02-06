@@ -14,6 +14,10 @@ $(document).ready(setup);
 
 const MIN_FEATURES = 5;
 const MAX_FEATURES = 8;
+const DOWNLOAD_SPEED = 1;
+const FINALIZE_SPEED = 0.25;
+const LOGO_COUNT = 5;
+
 let basePackageName;
 let basePackageDownloadStarted = false;
 let currentPackageName;
@@ -122,7 +126,7 @@ function setBasePackageName(name)
   $(".xashName").text(name);
 }
 
-function downloadPackage(name)
+function downloadPackage(name, packageLogo)
 {
   //Makes the download dialogue appear and start "downloading" the required
   //add-on/package
@@ -134,7 +138,7 @@ function downloadPackage(name)
   let packageInfo = `${name} ()`;
 
   let $packageLine = $("<div class='downloadedPackageLine'></div>");
-  let $packageImage = $("<img class='downloadIcon' src='assets/images/xashlogo.png'/>");
+  let $packageImage = $(`<img class='downloadIcon' src='${packageLogo}'/>`);
 
   let $packageInfoBlock = $("<div class='downloadInfoBlock'></div>");
   let $downloadText = $("<div class='downloadText'></div>").text(packageInfo);
@@ -157,6 +161,23 @@ function downloadPackage(name)
 
 }
 
+function downloadSubPackage()
+{
+  $("#installDialog").remove();
+
+  let packageLogo = `assets/images/packagelogo${Math.floor((Math.random()*4)+1)}.png`;
+  return downloadPackage(currentPackageName, packageLogo);
+}
+
+function downloadBasePackage()
+{
+  //Download function that handles a few things particular to the starting package
+  basePackageDownloadStarted = true;
+  $("#xashDownloadButton").attr("disabled", true);
+
+  return downloadPackage(basePackageName, 'assets/images/xashlogo.png');
+}
+
 function updateDownloadProgress($packageLine)
 {
   //Updates download progressbar and allows install on completion
@@ -166,23 +187,23 @@ function updateDownloadProgress($packageLine)
     return;
   }
 
-  $packageLine.find(".downloadProgressBar").progressbar("value", $packageLine.find(".downloadProgressBar").progressbar("value")+2);
+  $packageLine.find(".downloadProgressBar").progressbar("value", $packageLine.find(".downloadProgressBar").progressbar("value")+DOWNLOAD_SPEED);
 
   window.requestAnimationFrame(function () { updateDownloadProgress($packageLine); });
 }
 
-function downloadBasePackage()
+function cleanDownloadDialog()
 {
-  //Download function that handles a few things particular to the starting package
-  basePackageDownloadStarted = true;
-  $("#xashDownloadButton").attr("disabled", true);
-
-  return downloadPackage(basePackageName);
+  //Clears out the download dialog.
+  $("#downloadDialog").empty();
+  $("#downloadDialog").css("visibility", "hidden");
 }
 
 function installPackage(packageName)
 {
   //Opens an install dialog.
+
+  cleanDownloadDialog();
 
   console.log($(".installPackageButton"));
   $(".installPackageButton").attr('disabled', true);
@@ -222,7 +243,6 @@ function installPackage(packageName)
   $installTabs.append($installIntroTab);
 
 
-
   //Creates the Terms and Conditions tab
 
   let $termsHeader = $("<h3>Terms and Conditions</h3>");
@@ -242,7 +262,17 @@ function installPackage(packageName)
 
   $installTabs.append($installTermsTab);
 
-  //Creates the final tab
+  //Creates the finalize tab
+
+  let $finalizeHeader = $("<h3>Installing Package...</h3>");
+
+  $installFinalizeTab.append($finalizeHeader);
+
+  let $finalizeProgress = $("<div class='finalizeProgressBar'></div>");
+
+  $finalizeProgress.progressbar({ value: 0 });
+
+  $installFinalizeTab.append($finalizeProgress);
 
   $installTabs.append($installFinalizeTab);
 
@@ -280,17 +310,49 @@ function termsContinue()
   if ($("#termsAgree").prop("checked") === true)
   {
     nextInstallStep();
+    installProcess($("#installFinalize"));
   }
   else
   {
-
+    //TODO: insert some cheeky response to not agreeing here
   }
 }
 
-function installProcess()
+function revealDependency()
 {
+  //Replaces the finalize tab with a download dependency tab.
+  $("#installFinalize").empty();
+  let newPackageName = generateSubPackageName();
 
+  let $dependencyHeader = $("</br><h3>Almost there...</h3>");
+  let $dependencyText = $(`<p>But not quite! ${currentPackageName} requires ${newPackageName} to be installed on your computer to run. Download automatically?</p>`);
+
+  $("#installFinalize").append($dependencyHeader);
+  $("#installFinalize").append($dependencyText);
+
+  let $dependencyDownloadButton = $("<button id='dependencyDownloadButton' onclick='downloadSubPackage()'>Download Dependency</button>");
+
+  $("#installFinalize").append($dependencyDownloadButton);
+
+  currentPackageName = newPackageName;
 }
+
+function installProcess($finalizeTab)
+{
+  //Called repeatedly to update the install process, until complete, when it
+  //reveals the dependency tab.
+
+  $(".finalizeProgressBar").progressbar("value", $(".finalizeProgressBar").progressbar("value")+FINALIZE_SPEED);
+
+  if ($(".finalizeProgressBar").progressbar("value") >= 100)
+  {
+    revealDependency();
+    return;
+  }
+
+  window.requestAnimationFrame(function () {installProcess($finalizeTab)});
+}
+
 
 function setup() {
   setBasePackageName(generateBasePackageName());
