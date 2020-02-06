@@ -13,6 +13,8 @@ Exploring the existential nature of software dependencies
 $(document).ready(setup);
 
 let basePackageName;
+let basePackageDownloadStarted = false;
+let packages = [];
 
 function generateBasePackageName()
 {
@@ -59,10 +61,71 @@ function generatePackageName(names)
 
 function setBasePackageName(name)
 {
+  //Changes the text on the start page to reference the procedurally generated
+  //base package name
   basePackageName = name;
   $(".xashName").text(name);
 }
+
+function downloadPackage(name)
+{
+  //Makes the download dialogue appear and start "downloading" the required
+  //add-on/package
+
+  let packageSize = 10 + Math.random()*20
+
+  //TODO: Add random package size to package info, need to round down to
+  //two decimals
+  let packageInfo = `${name} ()`;
+
+  let $packageLine = $("<div class='downloadedPackageLine'></div>");
+  let $packageImage = $("<img class='downloadIcon' src='assets/images/xashlogo.png'/>");
+
+  let $packageInfoBlock = $("<div class='downloadInfoBlock'></div>");
+  let $downloadText = $("<div class='downloadText'></div>").text(packageInfo);
+  let $downloadProgress = $("<div class='downloadProgressBar'></div>");
+  let $installButton = $("<br/><button class='installPackageButton' onclick='installPackage()'>Install</button>");
+
+  $downloadProgress.progressbar({ value: 0 });
+
+  $installButton.attr('disabled', true);
+  $downloadText.append($installButton);
+  $packageInfoBlock.append($downloadText, $downloadProgress);
+
+  $packageLine.append($packageImage, $packageInfoBlock);
+
+  $("#downloadDialog").css("visibility", "visible");
+  $("#downloadDialog").append($packageLine);
+
+  //Start download progressbar
+  window.requestAnimationFrame(function () { updateDownloadProgress($packageLine); });
+
+}
+
+function updateDownloadProgress($packageLine)
+{
+  //Updates download progressbar and allows install on completion
+  if ($packageLine.find(".downloadProgressBar").progressbar("value") >= 100)
+  {
+    $packageLine.find(".installPackageButton").attr("disabled", false);
+  }
+
+  $packageLine.find(".downloadProgressBar").progressbar("value", $packageLine.find(".downloadProgressBar").progressbar("value")+0.25);
+  window.requestAnimationFrame(function () { updateDownloadProgress($packageLine); });
+}
+
+function downloadBasePackage()
+{
+  //Download function that handles a few things particular to the starting package
+  basePackageDownloadStarted = true;
+  $("#xashDownloadButton").attr("disabled", true);
+
+  return downloadPackage(basePackageName);
+}
+
+
 function setup() {
   console.log(generateBasePackageName());
   setBasePackageName(generateBasePackageName());
+  $(".downloadProgressBar").progressbar({ value: 37 });
 }
