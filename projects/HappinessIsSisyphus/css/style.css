@@ -47,9 +47,14 @@ body {
 {
   height: 500px;
   font-weight: 400;
-  height: 400px;
+  height: 380px;
   overflow-y: scroll;
   overflow-x: hidden;
+}
+
+.packageFeature
+{
+  font-weight: 400;
 }
 #downloadXashBox
 {
@@ -81,4 +86,18 @@ body {
   height: 100%;
   display: inline-block;
   vertical-align: top;
+}
+
+#footer
+{
+  background-color: gray;
+  width: 100%;
+  position: fixed;
+  bottom: 0px;
+}
+
+/* removes close button from jquery dialogs with the no-close dialogClass
+code from: https://api.jqueryui.com/dialog/ */
+.no-close .ui-dialog-titlebar-close {
+  display: none;
 }

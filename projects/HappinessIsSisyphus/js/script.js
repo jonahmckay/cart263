@@ -12,9 +12,12 @@ Exploring the existential nature of software dependencies
 
 $(document).ready(setup);
 
+const MIN_FEATURES = 5;
+const MAX_FEATURES = 8;
 let basePackageName;
 let basePackageDownloadStarted = false;
-let packages = [];
+let currentPackageName;
+let currentInstallWindow;
 
 let terms = `Let's be honest, you'll agree to whatever's written here because you need this software.
 
@@ -53,6 +56,20 @@ or banking data) to our e-mail.
 
 SPECIAL!!! ON FEBRUARY 28th!!!:
 No changes but we like leap days :)`;
+
+function generateFeature()
+{
+  let verbs = ["Accelerate", "Verbify", "Delete", "Create", "Synergize", "Utilize",
+  "Spawn", "Instantiate", "Metallicize", "Amplify", "Compile"];
+
+  let nouns = ["Files", "Media", "Images", "Processors", "Web Browsers", "Concepts",
+  "Nouns", "Spaces", "Compilers", "Applications"]
+
+  let verbChosen = verbs[Math.floor(Math.random() * verbs.length)];
+  let nounChosen = nouns[Math.floor(Math.random() * nouns.length)];
+
+  return `${verbChosen} ${nounChosen}`;
+}
 
 function generateBasePackageName()
 {
@@ -122,7 +139,7 @@ function downloadPackage(name)
   let $packageInfoBlock = $("<div class='downloadInfoBlock'></div>");
   let $downloadText = $("<div class='downloadText'></div>").text(packageInfo);
   let $downloadProgress = $("<div class='downloadProgressBar'></div>");
-  let $installButton = $("<br/><button class='installPackageButton' onclick='installPackage()'>Install</button>");
+  let $installButton = $(`<br/><button class='installPackageButton' onclick="installPackage('${currentPackageName}')">Install</button>`);
 
   $downloadProgress.progressbar({ value: 0 });
 
@@ -146,9 +163,11 @@ function updateDownloadProgress($packageLine)
   if ($packageLine.find(".downloadProgressBar").progressbar("value") >= 100)
   {
     $packageLine.find(".installPackageButton").attr("disabled", false);
+    return;
   }
 
   $packageLine.find(".downloadProgressBar").progressbar("value", $packageLine.find(".downloadProgressBar").progressbar("value")+2);
+
   window.requestAnimationFrame(function () { updateDownloadProgress($packageLine); });
 }
 
@@ -161,9 +180,13 @@ function downloadBasePackage()
   return downloadPackage(basePackageName);
 }
 
-function installPackage()
+function installPackage(packageName)
 {
+  //Opens an install dialog.
+
+  console.log($(".installPackageButton"));
   $(".installPackageButton").attr('disabled', true);
+
   let $installDialog = $("<div id='installDialog'></div>");
 
 
@@ -173,34 +196,103 @@ function installPackage()
   $installTabs.append($("<li><a href='#installTerms'>Terms</a></li>"));
   $installTabs.append($("<li><a href='#installFinalize'>Finish</a></li>"));
 
-  let $installIntroTab = $("<div id='installIntro'>Start</div>");
+  let $installIntroTab = $("<div id='installIntro'></br></div>");
   let $installTermsTab = $("<div id='installTerms'></br></div>");
-  let $installFinalizeTab = $("<div id='installFinalize'>Finish</div>");
+  let $installFinalizeTab = $("<div id='installFinalize'></br></div>");
 
   $installTabsContainer.append($installTabs);
 
   $installDialog.append($installTabsContainer);
 
 
+  //Creates the Intro/Start tab
+
+  let $installHeader = $(`<h3>Install ${packageName}</h3><h4>Why choose ${packageName}?</h4>`);
+  $installIntroTab.append($installHeader);
+  let $featureList = $("<div class='featureList'></div>");
+
+  for (let i = 0; i < Math.floor((Math.random()*(MAX_FEATURES-MIN_FEATURES))+MIN_FEATURES); i++)
+  {
+    $featureList.append($(`<p class='packageFeature'>${generateFeature()}</p>`));
+  }
+  $installIntroTab.append($featureList);
+
+  $installIntroTab.append($("<button onclick=nextInstallStep()>Continue</button>"))
 
   $installTabs.append($installIntroTab);
+
+
+
+  //Creates the Terms and Conditions tab
 
   let $termsHeader = $("<h3>Terms and Conditions</h3>");
   let $termsText = $("<p class='termsText'></p>").css('white-space', 'pre').text(terms);
   $installTermsTab.append($termsHeader);
   $installTermsTab.append($termsText);
+
+  let $termsAgreeLabel = $("<label for='termsAgree'>I agree to the terms and conditions</label>")
+  let $termsAgreeCheck = $("<input type='checkbox' name='termsAgree' id='termsAgree'</input>");
+
+  $installTermsTab.append($termsAgreeLabel);
+  $installTermsTab.append($termsAgreeCheck);
+
+  let $termsAgreeButton = $("<button onclick=termsContinue()>Install</button>")
+
+  $installTermsTab.append($termsAgreeButton);
+
   $installTabs.append($installTermsTab);
+
+  //Creates the final tab
+
   $installTabs.append($installFinalizeTab);
 
+  //Add the dialog to the page and set up tabs/dialog
   $('body').append($installDialog);
   $installTabsContainer.tabs({active: 0});
+  $installTabsContainer.tabs("disable");
 
-  $installDialog.dialog();
+  $installDialog.dialog({
+    dialogClass: "no-close",
+    width: 800,
+    height: 600
+  });
 
-
+  currentInstallWindow = $installDialog;
 }
 
+function nextInstallStep()
+{
+  //Increments the step in the install sequence.
+  console.log($("#installTabs").tabs("option", "active")+1);
+
+  //For some bizarre reason the tabs need to be "enabled" before the active tab
+  //can be incremented which makes some sense, but the entire reason they're
+  //disabled is so I can control the flow without the user being able to just
+  //click on them? Life's mysteries. Anyways, that's why the enable/disable wrappers
+  //around the active increment is necessary.
+  $("#installTabs").tabs("enable");
+  $("#installTabs").tabs("option", "active", $("#installTabs").tabs("option", "active")+1);
+  $("#installTabs").tabs("disable");
+}
+
+function termsContinue()
+{
+  if ($("#termsAgree").prop("checked") === true)
+  {
+    nextInstallStep();
+  }
+  else
+  {
+
+  }
+}
+
+function installProcess()
+{
+  
+}
 
 function setup() {
   setBasePackageName(generateBasePackageName());
+  currentPackageName = basePackageName;
 }
