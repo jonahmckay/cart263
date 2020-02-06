@@ -30,7 +30,7 @@ This is legally binding, somehow. We didn't ask a lawyer,
 but we did ask one of our devs who knows a lawyer.
 
 ON MONDAYS:
-You will only use this software while your computer's CPU
+You may only use this software while your computer's CPU
 is roughly 5 degrees Celsius from overheating. Luckily our program
 is so poorly written that this should not be an issue.
 
@@ -80,7 +80,7 @@ function generateBasePackageName()
   //Function for generating a package name that is
   //a parody of Adobe Flash Player.
   let companyNames = ["Clay", "Adele", "Brick", "Amoeba", "Adage", "Agape", "Addition"];
-  let conventionNames = ["Mash", "Hash", "Gash", "Bash", "Nash", "Rash"]
+  let conventionNames = ["Mash", "Hash", "Gash", "Bash", "Nash", "Rash", "Lash"]
   let utilityNames = ["Player"]
 
   return generatePackageName({
@@ -94,9 +94,9 @@ function generateSubPackageName()
 {
   //Function for generating a package name that doesn't necessarally need to be
   //a direct parody of Adobe Flash Player.
-  let companyNames = ["Clay", "Adele", "Brick", "Amoeba", "Adage", "Agape", "Addition"];
-  let conventionNames = ["Mash", "Hash", "Gash", "Bash", "Nash", "Rash"]
-  let utilityNames = ["Player", "Sorter", "Parser", "Mediator"]
+  let companyNames = ["Nanosoft", "Pear", "Flipper", "Yoddle", "Mrock", "Yednet", "Doodle", "Noodle", "🥔"];
+  let conventionNames = ["Mash", "Hash", "Gash", "Bash", "Nash", "Rash", "Padster", "Fad", "Tellmast", "Escher", "Name", "Hyphen", "Colon", "🐝"]
+  let utilityNames = ["Player", "Sorter", "Parser", "Mediator", "Engine", "Compiler"]
 
   return generatePackageName({
     companyNames: companyNames,
@@ -205,7 +205,6 @@ function installPackage(packageName)
 
   cleanDownloadDialog();
 
-  console.log($(".installPackageButton"));
   $(".installPackageButton").attr('disabled', true);
 
   let $installDialog = $("<div id='installDialog'></div>");
@@ -293,7 +292,6 @@ function installPackage(packageName)
 function nextInstallStep()
 {
   //Increments the step in the install sequence.
-  console.log($("#installTabs").tabs("option", "active")+1);
 
   //For some bizarre reason the tabs need to be "enabled" before the active tab
   //can be incremented which makes some sense, but the entire reason they're
@@ -307,6 +305,8 @@ function nextInstallStep()
 
 function termsContinue()
 {
+  //Continue function for the terms and conditions, checks to make sure you
+  //actually accepted the terms.
   if ($("#termsAgree").prop("checked") === true)
   {
     nextInstallStep();
