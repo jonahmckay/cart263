@@ -69,6 +69,7 @@ No changes but we like leap days :)`;
 
 function generateFeature()
 {
+  //Generates a feature, used in the start page of each package installer.
   let verbs = ["Accelerate", "Verbify", "Delete", "Create", "Synergize", "Utilize",
   "Spawn", "Instantiate", "Metallicize", "Amplify", "Compile"];
 
@@ -139,8 +140,6 @@ function downloadPackage(name, packageLogo)
 
   packageSize = 10 + Math.random()*20
 
-  //TODO: Add random package size to package info, need to round down to
-  //two decimals
   let packageInfo = `${name}`;
 
   let $packageLine = $("<div class='downloadedPackageLine'></div>");
