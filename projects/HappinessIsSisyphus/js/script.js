@@ -191,6 +191,8 @@ function updateDownloadProgress($packageLine)
   //Updates download progressbar and allows install on completion
   if ($packageLine.find(".downloadProgressBar").progressbar("value") >= 100)
   {
+    downloadSound.currentTime = 0;
+    downloadSound.play();
     $packageLine.find(".installPackageButton").attr("disabled", false);
     return;
   }
@@ -326,7 +328,8 @@ function termsContinue()
   }
   else
   {
-    //TODO: insert some cheeky response to not agreeing here
+    errorSound.currentTime = 0;
+    errorSound.play();
     checkboxSize += 1;
     $("#termsAgree").css('transform', `scale(${checkboxSize})`);
   }
@@ -339,7 +342,7 @@ function revealDependency()
   let newPackageName = generateSubPackageName();
 
   let $dependencyHeader = $("</br><h3>Almost there...</h3>");
-  let $dependencyText = $(`<p>But not quite! ${currentPackageName} requires ${newPackageName} to be installed on your computer to run. Download automatically?</p>`);
+  let $dependencyText = $(`<p>But not quite! ${currentPackageName} requires ${newPackageName} to be installed on your computer to run. Download now?</p>`);
 
   $("#installFinalize").append($dependencyHeader);
   $("#installFinalize").append($dependencyText);
@@ -361,6 +364,8 @@ function installProcess($finalizeTab)
   if ($(".finalizeProgressBar").progressbar("value") >= 100)
   {
     revealDependency();
+    installSound.currentTime = 0;
+    installSound.play();
     return;
   }
 
