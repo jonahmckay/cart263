@@ -18,12 +18,18 @@ const DOWNLOAD_SPEED = 1;
 const FINALIZE_SPEED = 0.25;
 const LOGO_COUNT = 5;
 
+const errorSound = new Audio("assets/sounds/error.wav");
+const downloadSound = new Audio("assets/sounds/downloadcomplete.wav");
+const installSound = new Audio("assets/sounds/install.wav");
+
 let basePackageName;
 let basePackageDownloadStarted = false;
 let currentPackageName;
 let currentInstallWindow;
+let packageSize;
+let checkboxSize = 1;
 
-let terms = `Let's be honest, you'll agree to whatever's written here because you need this software.
+const terms = `Let's be honest, you'll agree to whatever's written here because you need this software.
 
 The terms and conditions of using this software depend on the day of the week.
 This is legally binding, somehow. We didn't ask a lawyer,
@@ -56,7 +62,7 @@ Do not
 ON SUNDAYS:
 You may participate in our Voluntary Shady Data Collection program!
 To participate, please send files on your computer (preferably with personal
-or banking data) to our e-mail.
+or banking data) to our e-mail (to be announced soon!).
 
 SPECIAL!!! ON FEBRUARY 28th!!!:
 No changes but we like leap days :)`;
@@ -131,24 +137,26 @@ function downloadPackage(name, packageLogo)
   //Makes the download dialogue appear and start "downloading" the required
   //add-on/package
 
-  let packageSize = 10 + Math.random()*20
+  packageSize = 10 + Math.random()*20
 
   //TODO: Add random package size to package info, need to round down to
   //two decimals
-  let packageInfo = `${name} ()`;
+  let packageInfo = `${name}`;
 
   let $packageLine = $("<div class='downloadedPackageLine'></div>");
-  let $packageImage = $(`<img class='downloadIcon' src='${packageLogo}'/>`);
+  let $packageImage = $(`<img class='downloadIcon' alt='An odd looking software icon' src='${packageLogo}'/>`);
 
   let $packageInfoBlock = $("<div class='downloadInfoBlock'></div>");
   let $downloadText = $("<div class='downloadText'></div>").text(packageInfo);
+  let $sizeText = $(`<p><span id='downloadSize'>(${packageSize.toFixed(2)} of 0MB) </span></p>`)
   let $downloadProgress = $("<div class='downloadProgressBar'></div>");
-  let $installButton = $(`<br/><button class='installPackageButton' onclick="installPackage('${currentPackageName}')">Install</button>`);
+  let $installButton = $(`<button class='installPackageButton' onclick="installPackage('${currentPackageName}')">Install</button>`);
 
   $downloadProgress.progressbar({ value: 0 });
 
   $installButton.attr('disabled', true);
-  $downloadText.append($installButton);
+  $downloadText.append($sizeText);
+  $sizeText.append($installButton);
   $packageInfoBlock.append($downloadText, $downloadProgress);
 
   $packageLine.append($packageImage, $packageInfoBlock);
@@ -186,8 +194,11 @@ function updateDownloadProgress($packageLine)
     $packageLine.find(".installPackageButton").attr("disabled", false);
     return;
   }
+  //update progress
+  let newProgress = $packageLine.find(".downloadProgressBar").progressbar("value")+DOWNLOAD_SPEED;
+  $packageLine.find(".downloadProgressBar").progressbar("value", newProgress);
 
-  $packageLine.find(".downloadProgressBar").progressbar("value", $packageLine.find(".downloadProgressBar").progressbar("value")+DOWNLOAD_SPEED);
+  $("#downloadSize").text(`(${packageSize.toFixed(2)} of ${(packageSize*(newProgress/100)).toFixed(2)}MB) `)
 
   window.requestAnimationFrame(function () { updateDownloadProgress($packageLine); });
 }
@@ -204,6 +215,7 @@ function installPackage(packageName)
   //Opens an install dialog.
 
   cleanDownloadDialog();
+  checkboxSize = 1;
 
   $(".installPackageButton").attr('disabled', true);
 
@@ -315,6 +327,8 @@ function termsContinue()
   else
   {
     //TODO: insert some cheeky response to not agreeing here
+    checkboxSize += 1;
+    $("#termsAgree").css('transform', `scale(${checkboxSize})`);
   }
 }
 

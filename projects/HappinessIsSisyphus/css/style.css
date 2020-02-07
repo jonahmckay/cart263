@@ -13,11 +13,6 @@ body {
   visibility: hidden;
 }
 
-.downloadedPackageLine
-{
-
-}
-
 .downloadIcon
 {
   width: 100px;
@@ -40,14 +35,14 @@ body {
 {
   position: relative;
   width: 200px;
-  bottom: -10px;
+  bottom: 0px;
 }
 
 .termsText
 {
   height: 500px;
   font-weight: 400;
-  height: 380px;
+  height: 360px;
   overflow-y: scroll;
   overflow-x: hidden;
 }
@@ -64,7 +59,7 @@ body {
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
-
+  font-weight: bold;
 }
 
 #xashBoxBottom
@@ -85,7 +80,7 @@ body {
 {
   height: 100%;
   display: inline-block;
-  vertical-align: top;
+  vertical-align: middle;
 }
 
 #footer
