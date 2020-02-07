@@ -2,7 +2,7 @@
 
 ## CART 263 Project 1, by Jonah McKay
 
-###The concepts
+### The concepts
 
 I believe that using the myth of Sisyphus as a prompt was appropriate, as
 working with software and even the language used around it can be Sisyphean in
