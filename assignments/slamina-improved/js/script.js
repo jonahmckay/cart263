@@ -197,7 +197,7 @@ function addButton(label)
   $button.button();
   $button.on('click', handleButtonGuess);
 
-  $("body").append($button);
+  $("#guesses").append($button);
 
   return $button;
 }
@@ -206,7 +206,7 @@ function newRound()
 {
   //Starts a new round and generates a new set of guesses and
   //correct answer.
-  let buttons = [];
+  buttons = [];
 
   for (let i = 0; i < NUM_OPTIONS; i++)
   {
@@ -222,7 +222,7 @@ function newRound()
 function handleButtonGuess()
 {
   //Function to handle guesses from buttons
-  handleGuess($this.text())
+  handleGuess($(this).text());
 }
 
 function handleGuess(guess)
@@ -232,10 +232,9 @@ function handleGuess(guess)
   //appropriately. If the guess matches NO valid answers,
   //then simply repeat the word without resetting score.
   let validAnswer = false;
-
   for (var i = 0; i < buttons.length; i++)
   {
-    if (guess === buttons.text())
+    if (guess === buttons[i].text())
     {
       validAnswer = true;
       break;
@@ -249,7 +248,7 @@ function handleGuess(guess)
       return;
   }
 
-  if ($(this).text() === $correctButton.text())
+  if (guess === $correctButton.text())
   {
     $(".guess").remove();
     setTimeout(newRound, 500);
@@ -294,7 +293,7 @@ function giveUp()
 {
   //Gives up on the current round, shakes the correct button
   //and then resets the score and starts a new round.
-  $correctButton.effect("shake", options: {
+  $correctButton.effect("shake", {
     finish: function () { setScore(0); newRound(); }
   }
   );
