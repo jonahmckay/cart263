@@ -16,6 +16,7 @@ let buttons = [];
 
 let $correctButton;
 
+let score = 0;
 
 let animals = ["aardvark",
       "alligator",
@@ -166,18 +167,27 @@ function getRandomElement(array)
 
 function addButton(label)
 {
+  //Function that adds a guess button,
+  //including text and event handlers.
+
   let $button = $(`<button></button>`);
+
   $button.addClass("guess");
   $button.text(label);
   $button.button();
   $button.on('click', handleGuess);
+
   $("body").append($button);
+
   return $button;
 }
 
 function newRound()
 {
-  buttons = [];
+  //Starts a new round and generates a new set of guesses and
+  //correct answer.
+  let buttons = [];
+
   for (let i = 0; i < NUM_OPTIONS; i++)
   {
     let label = getRandomElement(animals);
@@ -185,26 +195,41 @@ function newRound()
     buttons.push(newButton);
   }
   $correctButton = getRandomElement(buttons);
+
   sayBackwards($correctButton.text());
 }
 
 function handleGuess()
 {
+  //Compares the text of the button that called handleGuess
+  //to the correct answer, and either progresses or fails
+  //appropriately.
   if ($(this).text() === $correctButton.text())
   {
     $(".guess").remove();
     setTimeout(newRound, 500);
+    setScore(score+1);
   }
   else
   {
     $(this).effect("shake");
     sayBackwards($correctButton.text());
+    setScore(0);
   }
+}
+
+function setScore(newScore)
+{
+  //Sets the score and updates the score counter.
+  score = newScore;
+  $(".score").text(score);
 }
 
 function sayBackwards(text)
 {
+  //Says the correct answer backwards using text to speech, with some
+  //random effects.
   let backwardsText = text.split('').reverse().join('');
-  let options = {rate: Math.random(), pitch: Math.random()};
+  let options = {rate: 0.05+(Math.random()*0.95), pitch: 0.05+(Math.random()*0.95)};
   responsiveVoice.speak(backwardsText, "UK English Male", options);
 }
