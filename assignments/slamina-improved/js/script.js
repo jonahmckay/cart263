@@ -207,6 +207,7 @@ function newRound()
   //Starts a new round and generates a new set of guesses and
   //correct answer.
   buttons = [];
+  $(".guess").remove();
 
   for (let i = 0; i < NUM_OPTIONS; i++)
   {
@@ -250,7 +251,6 @@ function handleGuess(guess)
 
   if (guess === $correctButton.text())
   {
-    $(".guess").remove();
     setTimeout(newRound, 500);
     setScore(score+1);
   }
@@ -293,8 +293,9 @@ function giveUp()
 {
   //Gives up on the current round, shakes the correct button
   //and then resets the score and starts a new round.
-  $correctButton.effect("shake", {
-    finish: function () { setScore(0); newRound(); }
+  $correctButton.effect({
+    effect: "shake",
+    complete: function () { setTimeout(function () { setScore(0); newRound(); }, 500); },
   }
   );
 }
