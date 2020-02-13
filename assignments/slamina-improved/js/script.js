@@ -175,7 +175,7 @@ function addButton(label)
   $button.addClass("guess");
   $button.text(label);
   $button.button();
-  $button.on('click', handleGuess);
+  $button.on('click', handleButtonGuess);
 
   $("body").append($button);
 
@@ -199,11 +199,36 @@ function newRound()
   sayBackwards($correctButton.text());
 }
 
-function handleGuess()
+function handleButtonGuess()
 {
-  //Compares the text of the button that called handleGuess
+  //Function to handle guesses from buttons
+  handleGuess($this.text())
+}
+
+function handleGuess(guess)
+{
+  //Compares the guess text
   //to the correct answer, and either progresses or fails
-  //appropriately.
+  //appropriately. If the guess matches NO valid answers,
+  //then simply repeat the word without resetting score.
+  let validAnswer = false;
+
+  for (var i = 0; i < buttons.length; i++)
+  {
+    if (guess === buttons.text())
+    {
+      validAnswer = true;
+      break;
+    }
+  }
+
+  //If the answer is INVALID, discard it and return out of the function.
+  if (!validAnswer)
+  {
+      sayBackwards($correctButton.text());
+      return;
+  }
+
   if ($(this).text() === $correctButton.text())
   {
     $(".guess").remove();
@@ -212,9 +237,20 @@ function handleGuess()
   }
   else
   {
-    $(this).effect("shake");
     sayBackwards($correctButton.text());
     setScore(0);
+
+    //Find buttons with the same text as the
+    //guess, and then shake them in disapproval
+    //on failure.
+    for (let i = 0; i < buttons.length; i++)
+    {
+      if (buttons[i].text() === guess)
+      {
+        buttons[i].effect("shake");
+      }
+    }
+
   }
 }
 
@@ -232,4 +268,14 @@ function sayBackwards(text)
   let backwardsText = text.split('').reverse().join('');
   let options = {rate: 0.05+(Math.random()*0.95), pitch: 0.05+(Math.random()*0.95)};
   responsiveVoice.speak(backwardsText, "UK English Male", options);
+}
+
+function giveUp()
+{
+  //Gives up on the current round, shakes the correct button
+  //and then resets the score and starts a new round.
+  $correctButton.effect("shake", options: {
+    finish: function () { setScore(0); newRound(); }
+  }
+  );
 }
