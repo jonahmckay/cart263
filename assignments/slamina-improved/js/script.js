@@ -18,6 +18,18 @@ let $correctButton;
 
 let score = 0;
 
+let commands = {
+  //Make a guess that the animal is *tag, as though you pressed a button
+  //with text *tag.
+  "i think it is *tag": handleGuess,
+
+  //Gives up, starts new round and sets score to 0.
+  "i give up": giveUp,
+
+  //Says the answer backwards.
+  "say it again": function () { sayBackwards($correctButton.text()); }
+}
+
 let animals = ["aardvark",
       "alligator",
       "alpaca",
@@ -157,6 +169,14 @@ let animals = ["aardvark",
 $(document).ready(setup);
 
 function setup() {
+
+  if (annyang)
+  {
+    annyang.addCommands(commands);
+
+    annyang.start();
+  }
+
   newRound();
 }
 
