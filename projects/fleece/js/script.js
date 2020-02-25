@@ -12,16 +12,27 @@ Made for Project 2, Something is Wrong on the Internet for
 CART263.
 https://github.com/pippinbarr/cart263-2020
 
-While unintentional, it is possible that given the corpora
-this project draws from (planning to use the results of a
-search engines image search), the site may display shocking
-or offensive content. Potential content warning for anything
-and everything scraped by search engines on the Internet.
+
+While unintentional, it is possible given that because
+this project draws from Wikimedia Commons' image search
+the site may display shocking or offensive content.
+Potential content warning for any image on
+on Wikimedia Commons.
+https://commons.wikimedia.org/wiki/Commons:Project_scope#Censorship
 
 *********************************************************************/
 
-const IMAGES_PER_QUERY = 10;
+const IMAGES_PER_QUERY = 50;
 const SHOP_ITEM_SIZE = 200;
+const PAGE_BOTTOM_THRESHOLD = 200;
+
+//list of items in the shop, represented by object literals generated in
+//addItemToPage.
+let shopItems = [];
+
+//used by pageScrollCheck to avoid calling addRandomItemToPageUntilBottom
+//if it's already running
+let generatingItems = false;
 
 $(document).ready(setup);
 
@@ -63,10 +74,10 @@ function sendRandomQuery(callback)
   getImageFromQuery(callback, query)
 }
 
-function addItemtoPage(imageUrl, name)
+function addItemToPage(imageUrl, name)
 {
   //Adds a shop item to the page using the imageurl given as well as the name
-  //of the item.
+  //of the item. Also adds the item to the shopItems array.
   let $shopItem = $("<div class='shopItem'></div>");
 
   let $shopImage = $("<div class='shopItemImage'></div>");
@@ -79,13 +90,53 @@ function addItemtoPage(imageUrl, name)
   $shopItem.append($shopCaption);
 
   $('#shopContent').append($shopItem);
-  //$('body').append(`<img src=${generateThumbnailLink(400, imageUrl)}></img>`);
+
+  shopItems.push({
+    imageUrl: imageUrl,
+    itemName: name
+  });
+}
+
+function pageBottomCheck(callback)
+{
+  //Calls a function when close to the bottom of the page.
+  if ($(window).scrollTop() + $(window).height() > $(document).height() - PAGE_BOTTOM_THRESHOLD)
+  {
+    callback();
+  }
+  else
+  {
+    generatingItems = false;
+  }
+}
+
+function addItemToPageUntilBottom(imageUrl, name)
+{
+  //Part of a recursive function that generates items until the page bottom is
+  //reached.
+  generatingItems = true;
+  addItemToPage(imageUrl, name);
+  pageBottomCheck(addRandomItemToPageUntilBottom);
 }
 
 function addRandomItemToPage()
 {
   //Creates a random item, then adds it to the page.
-  sendRandomQuery(addItemtoPage);
+  sendRandomQuery(addItemToPage);
+}
+
+function addRandomItemToPageUntilBottom()
+{
+  //Creates a random item, then adds it to the page. Repeats until there's enough
+  //content to create the illusion of endlessness.
+
+  //This is a bit of a confusing function (yay callbacks!) but the gist of it is:
+  //sendRandomQuery goes to getImageFromQuery, which runs its callback,
+  //addItemToPageUntilBottom, then that performs pageBottomCheck, which if it
+  //detects the page is still too small, runs addRandomItemToPageUntilBottom
+  //again.
+  generatingItems = true;
+  sendRandomQuery(addItemToPageUntilBottom);
 }
 
 function generateThumbnailLink(size, url)
@@ -128,8 +179,6 @@ function generateThumbnailLink(size, url)
 }
 
 function setup() {
-  for (let i = 0; i < 10; i++)
-  {
-    addRandomItemToPage();
-  }
+  $(window).scroll(function() { pageBottomCheck(addRandomItemToPageUntilBottom) });
+  addRandomItemToPageUntilBottom();
 }
