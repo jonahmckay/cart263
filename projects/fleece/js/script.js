@@ -34,7 +34,68 @@ let shopItems = [];
 //if it's already running
 let generatingItems = false;
 
+//On a scale of 0.5 to 6.5, declares how pleased the narrator is with your
+//actions. Affects what they say
+let narratorAttitude = 3.5;
+
+//Used to track how likely the narrator is to quip.
+let ticksSinceLastNarratorQuip = 0;
+
+let baseQuipChance = -0.5;
+let tickQuipChanceModifier = 0.045;
+
+//Used to determine how quickly the narrator becomes angry with you.
+let attitudeDeltaPerTick = -0.02
+
+//Used to determine how frequently the narrator will update.
+let narratorTickInterval = 1000;
+
+let narratorSynth = window.speechSynthesis;
+
 $(document).ready(setup);
+
+// -----------
+// SHOP ITEM CODE
+// -----------
+
+function generateThumbnailLink(size, url)
+{
+  //Generates a wikimedia thumbnail link based on the URL
+  //given and the size provided.
+  //Not exactly future proof given that it relies on the way
+  //Wikimedia Commons stores its images internally, but
+  //I could find no way of doing this through their API.
+
+  //Splits the URL string into its subdomains.
+  let splitString = url.split("/");
+
+  //Search the string for the commons subdomain, and then append
+  // the /thumb domain to it.
+  for (let i = 0; i < splitString.length; i++)
+  {
+    if (splitString[i] === "commons")
+    {
+      splitString[i] =  "commons/thumb";
+    }
+  }
+
+  //Gets the filename of the image
+  let fileName = splitString[splitString.length-1];
+
+  //Generates the thumbnail filename based on the filename of the image.
+  //It is always "{thumbnailSize}px-{fileName}".
+  let thumbnailName = `${size}px-${fileName}`;
+
+  //Push the thumbnailName to the domains array, putting it at the end
+  //past the filename component.
+  splitString.push(thumbnailName);
+
+  //Reconstruct the URL.
+  let newUrl = splitString.join("/");
+
+  //Return the URL.
+  return newUrl;
+}
 
 function getImageFromQuery(callback, query)
 {
@@ -140,46 +201,57 @@ function addRandomItemToPageUntilBottom()
   sendRandomQuery(addItemToPageUntilBottom);
 }
 
-function generateThumbnailLink(size, url)
+// -----------
+// SPEECH CODE
+// -----------
+
+function narratorSay(text)
 {
-  //Generates a wikimedia thumbnail link based on the URL
-  //given and the size provided.
-  //Not exactly future proof given that it relies on the way
-  //Wikimedia Commons stores its images internally, but
-  //I could find no way of doing this through their API.
+  text = text.replace("$RECENT_ITEM", shopItems[shopItems.length-1].itemName);
 
-  //Splits the URL string into its subdomains.
-  let splitString = url.split("/");
+  //responsiveVoice.speak(text, "UK English Male");
+  let utterance = new SpeechSynthesisUtterance(text);
 
-  //Search the string for the commons subdomain, and then append
-  // the /thumb domain to it.
-  for (let i = 0; i < splitString.length; i++)
+  narratorSynth.speak(utterance);
+}
+
+function narratorQuip()
+{
+  let roundedAttitude = Math.round(narratorAttitude);
+  if (roundedAttitude < 1)
   {
-    if (splitString[i] === "commons")
-    {
-      splitString[i] =  "commons/thumb";
-    }
+    roundedAttitude = 1;
+  }
+  else if (roundedAttitude > 6)
+  {
+    roundedAttitude = 6;
   }
 
-  //Gets the filename of the image
-  let fileName = splitString[splitString.length-1];
-
-  //Generates the thumbnail filename based on the filename of the image.
-  //It is always "{thumbnailSize}px-{fileName}".
-  let thumbnailName = `${size}px-${fileName}`;
-
-  //Push the thumbnailName to the domains array, putting it at the end
-  //past the filename component.
-  splitString.push(thumbnailName);
-
-  //Reconstruct the URL.
-  let newUrl = splitString.join("/");
-
-  //Return the URL.
-  return newUrl;
+  let quipSelected = NARRATOR_DIALOGUE[`relation_${roundedAttitude}`][Math.floor(Math.random()*NARRATOR_DIALOGUE[`relation_${roundedAttitude}`].length)];
+  narratorSay(quipSelected);
 }
+
+function narratorTick()
+{
+  if (Math.random() < baseQuipChance+(ticksSinceLastNarratorQuip*tickQuipChanceModifier))
+  {
+    narratorQuip();
+    ticksSinceLastNarratorQuip = 0;
+  }
+  else
+  {
+    ticksSinceLastNarratorQuip++;
+  }
+  narratorAttitude += attitudeDeltaPerTick;
+}
+
+// -----------
+// SETUP CODE
+// -----------
 
 function setup() {
   $(window).scroll(function() { pageBottomCheck(addRandomItemToPageUntilBottom) });
   addRandomItemToPageUntilBottom();
+
+  setInterval(narratorTick, narratorTickInterval);
 }
