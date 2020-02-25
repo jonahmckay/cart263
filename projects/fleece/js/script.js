@@ -34,6 +34,9 @@ let shopItems = [];
 //if it's already running
 let generatingItems = false;
 
+//Currently viewed item
+let viewedItem = null;
+
 //On a scale of 0.5 to 6.5, declares how pleased the narrator is with your
 //actions. Affects what they say
 let narratorAttitude = 3.5;
@@ -150,12 +153,15 @@ function addItemToPage(imageUrl, name)
   $shopItem.append($shopImage);
   $shopItem.append($shopCaption);
 
-  $('#shopContent').append($shopItem);
-
-  shopItems.push({
+  let itemObject = {
     imageUrl: imageUrl,
     itemName: name
-  });
+  };
+
+  $shopItem.on('click', function(e) { onItemClick(e, itemObject)});
+  $('#shopContent').append($shopItem);
+
+  shopItems.push(itemObject);
 }
 
 function pageBottomCheck(callback)
@@ -207,9 +213,11 @@ function addRandomItemToPageUntilBottom()
 
 function narratorSay(text)
 {
+  //Make the narrator say something.
+  //ResponsiveVoice doesn't seem to be working, so I'm using the Web Speech
+  //API instead.
   text = text.replace("$RECENT_ITEM", shopItems[shopItems.length-1].itemName);
 
-  //responsiveVoice.speak(text, "UK English Male");
   let utterance = new SpeechSynthesisUtterance(text);
 
   narratorSynth.speak(utterance);
@@ -217,6 +225,7 @@ function narratorSay(text)
 
 function narratorQuip()
 {
+  //Make the narrator say something based on their attitude towards the user.
   let roundedAttitude = Math.round(narratorAttitude);
   if (roundedAttitude < 1)
   {
@@ -233,6 +242,7 @@ function narratorQuip()
 
 function narratorTick()
 {
+  //A calculation to be made for the narrator every tick period.
   if (Math.random() < baseQuipChance+(ticksSinceLastNarratorQuip*tickQuipChanceModifier))
   {
     narratorQuip();
@@ -246,6 +256,32 @@ function narratorTick()
 }
 
 // -----------
+// ITEM POP-UP CODE
+// -----------
+
+function onItemClick(e, item)
+{
+  createPurchaseDialog(item);
+}
+
+function createPurchaseDialog(item)
+{
+  $("#purchaseDialog").remove();
+
+  viewedItem = item;
+  let $purchaseDiv = $("<div id='purchaseDialog'></div>");
+
+  let $purchaseDialog = $purchaseDiv.dialog();
+
+  $("body").append($purchaseDialog);
+}
+
+function purchaseItem()
+{
+  //pass
+}
+
+// -----------
 // SETUP CODE
 // -----------
 
@@ -253,5 +289,5 @@ function setup() {
   $(window).scroll(function() { pageBottomCheck(addRandomItemToPageUntilBottom) });
   addRandomItemToPageUntilBottom();
 
-  setInterval(narratorTick, narratorTickInterval);
+  //setInterval(narratorTick, narratorTickInterval);
 }
