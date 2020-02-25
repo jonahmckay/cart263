@@ -11,6 +11,7 @@ body {
 #fleeceHeaderLogo
 {
   height: 100%;
+  margin: 5px;
 }
 
 #shopContent
@@ -21,12 +22,14 @@ body {
   justify-content: space-around;
   align-items: center;
   align-content: flex-start;
+  margin-left: 50px;
+  margin-right: 50px;
+  margin-top: 10px;
 }
 
 .shopItem
 {
   border: 2px black solid;
-  background-color: green;
   margin: 10px;
 }
 
@@ -43,5 +46,5 @@ body {
 
 .shopItemCaption
 {
-
+  text-align: center;
 }
