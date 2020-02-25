@@ -100,10 +100,7 @@ function addItemToPage(imageUrl, name)
 function pageBottomCheck(callback)
 {
   //Calls a function when close to the bottom of the page.
-<<<<<<< HEAD
   //Code modified from https://stackoverflow.com/a/12677599
-=======
->>>>>>> 4c5018dc9082f62d314c06d4d8130fb86a40fb98
   if ($(window).scrollTop() + $(window).height() > $(document).height() - PAGE_BOTTOM_THRESHOLD)
   {
     callback();
