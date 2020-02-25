@@ -1,3 +1,47 @@
 body {
+  margin: 0;
+}
+
+#header
+{
+  height: 100px;
+  width: 100%;
+}
+
+#fleeceHeaderLogo
+{
+  height: 100%;
+}
+
+#shopContent
+{
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: space-around;
+  align-items: center;
+  align-content: flex-start;
+}
+
+.shopItem
+{
+  border: 2px black solid;
+  background-color: green;
+  margin: 10px;
+}
+
+.shopItemImage
+{
+  /* background-image trick from https://stackoverflow.com/a/11763434 */
+  width: 200px;
+  height: 200px;
+  background-image: url("../assets/images/fleeceicon-cropped.png");
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: 50% 50%;
+}
+
+.shopItemCaption
+{
 
 }

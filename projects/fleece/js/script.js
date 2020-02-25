@@ -21,6 +21,7 @@ and everything scraped by search engines on the Internet.
 *********************************************************************/
 
 const IMAGES_PER_QUERY = 10;
+const SHOP_ITEM_SIZE = 200;
 
 $(document).ready(setup);
 
@@ -66,7 +67,19 @@ function addItemtoPage(imageUrl, name)
 {
   //Adds a shop item to the page using the imageurl given as well as the name
   //of the item.
-  $('body').append(`<img src=${generateThumbnailLink(400, imageUrl)}></img>`);
+  let $shopItem = $("<div class='shopItem'></div>");
+
+  let $shopImage = $("<div class='shopItemImage'></div>");
+  $shopImage.css("background-image", `url('${generateThumbnailLink(SHOP_ITEM_SIZE, imageUrl)}')`);
+
+  let $shopCaption = $("<div class='shopItemCaption'>");
+  $shopCaption.append(name);
+
+  $shopItem.append($shopImage);
+  $shopItem.append($shopCaption);
+
+  $('#shopContent').append($shopItem);
+  //$('body').append(`<img src=${generateThumbnailLink(400, imageUrl)}></img>`);
 }
 
 function addRandomItemToPage()
@@ -115,5 +128,8 @@ function generateThumbnailLink(size, url)
 }
 
 function setup() {
-  addRandomItemToPage();
+  for (let i = 0; i < 10; i++)
+  {
+    addRandomItemToPage();
+  }
 }
