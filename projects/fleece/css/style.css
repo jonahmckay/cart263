@@ -1,5 +1,6 @@
 body {
   margin: 0;
+  font-family: "Lucidia Console",Monaco,monospace;
 }
 
 #header
@@ -31,6 +32,14 @@ body {
 {
   border: 2px black solid;
   margin: 10px;
+  transition: 0.3s;
+  background-color: white;
+}
+
+.shopItem:hover
+{
+  cursor: pointer;
+  background-color: #29abe2;
 }
 
 .shopItemImage
@@ -47,4 +56,27 @@ body {
 .shopItemCaption
 {
   text-align: center;
+}
+
+#purchaseDialog
+{
+  width: 800px;
+  display: flex;
+}
+
+#dialogInfoBox
+{
+  width: 400px;
+  margin-left: 16px;
+}
+
+#dialogImage
+{
+  /* background-image trick from https://stackoverflow.com/a/11763434 */
+  width: 400px;
+  height: 400px;
+  background-image: url("../assets/images/fleeceicon-cropped.png");
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: 50% 50%;
 }

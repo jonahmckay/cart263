@@ -24,6 +24,7 @@ https://commons.wikimedia.org/wiki/Commons:Project_scope#Censorship
 
 const IMAGES_PER_QUERY = 50;
 const SHOP_ITEM_SIZE = 200;
+const DIALOG_IMAGE_SIZE = 400;
 const PAGE_BOTTOM_THRESHOLD = 200;
 
 //list of items in the shop, represented by object literals generated in
@@ -37,6 +38,8 @@ let generatingItems = false;
 //Currently viewed item
 let viewedItem = null;
 
+let lastPurchase = null;
+
 //On a scale of 0.5 to 6.5, declares how pleased the narrator is with your
 //actions. Affects what they say
 let narratorAttitude = 3.5;
@@ -49,6 +52,9 @@ let tickQuipChanceModifier = 0.045;
 
 //Used to determine how quickly the narrator becomes angry with you.
 let attitudeDeltaPerTick = -0.02
+
+//Represents the attitude adjustment on the purchase of an item.
+let attitudeDeltaOnPurchase = 2;
 
 //Used to determine how frequently the narrator will update.
 let narratorTickInterval = 1000;
@@ -138,25 +144,34 @@ function sendRandomQuery(callback)
   getImageFromQuery(callback, query)
 }
 
+function generateRandomItemPrice()
+{
+  //Returns a price-like integer value.
+  return Math.round((Math.pow(Math.random()*100, 2) * 5)+5);
+}
+
 function addItemToPage(imageUrl, name)
 {
   //Adds a shop item to the page using the imageurl given as well as the name
   //of the item. Also adds the item to the shopItems array.
+
+  let itemObject = {
+    imageUrl: imageUrl,
+    itemName: name,
+    price: generateRandomItemPrice(),
+    purchased: false
+  };
+
   let $shopItem = $("<div class='shopItem'></div>");
 
   let $shopImage = $("<div class='shopItemImage'></div>");
   $shopImage.css("background-image", `url('${generateThumbnailLink(SHOP_ITEM_SIZE, imageUrl)}')`);
 
   let $shopCaption = $("<div class='shopItemCaption'>");
-  $shopCaption.append(name);
+  $shopCaption.append(`${name} - Price: ¤${itemObject.price}`);
 
   $shopItem.append($shopImage);
   $shopItem.append($shopCaption);
-
-  let itemObject = {
-    imageUrl: imageUrl,
-    itemName: name
-  };
 
   $shopItem.on('click', function(e) { onItemClick(e, itemObject)});
   $('#shopContent').append($shopItem);
@@ -211,12 +226,36 @@ function addRandomItemToPageUntilBottom()
 // SPEECH CODE
 // -----------
 
+function boundNarratorAttitude(minimum, maximum)
+{
+  if (narratorAttitude > maximum)
+  {
+    narratorAttitude = maximum
+  }
+  else if (narratorAttitude < minimum)
+  {
+    narratorAttitude = minimum;
+  }
+}
+
+function adjustAttitude(delta)
+{
+  narratorAttitude += delta;
+  boundNarratorAttitude(0.5, 6.5);
+}
+
 function narratorSay(text)
 {
   //Make the narrator say something.
   //ResponsiveVoice doesn't seem to be working, so I'm using the Web Speech
   //API instead.
   text = text.replace("$RECENT_ITEM", shopItems[shopItems.length-1].itemName);
+  if (lastPurchase !== null) {
+  text = text.replace("$RECENT_PURCHASE", lastPurchase.itemName);
+  }
+  if (viewedItem !== null) {
+  text = text.replace("$VIEWED_ITEM", viewedItem.itemName);
+  }
 
   let utterance = new SpeechSynthesisUtterance(text);
 
@@ -236,8 +275,14 @@ function narratorQuip()
     roundedAttitude = 6;
   }
 
-  let quipSelected = NARRATOR_DIALOGUE[`relation_${roundedAttitude}`][Math.floor(Math.random()*NARRATOR_DIALOGUE[`relation_${roundedAttitude}`].length)];
-  narratorSay(quipSelected);
+  narratorCommentFrom(`relation_${roundedAttitude}`);
+}
+
+function narratorCommentFrom(commentList)
+{
+  //Makes the narrator say a random phrase from one of their phraselists.
+  let commentSelected = NARRATOR_DIALOGUE[commentList][Math.floor(Math.random()*NARRATOR_DIALOGUE[commentList].length)];
+  narratorSay(commentSelected);
 }
 
 function narratorTick()
@@ -252,33 +297,71 @@ function narratorTick()
   {
     ticksSinceLastNarratorQuip++;
   }
-  narratorAttitude += attitudeDeltaPerTick;
+  adjustAttitude(attitudeDeltaPerTick);
 }
 
 // -----------
 // ITEM POP-UP CODE
 // -----------
 
+function purchaseItem(item)
+{
+  //General item purchasing function.
+  lastPurchase = item;
+  narratorCommentFrom("item_purchased");
+  adjustAttitude(attitudeDeltaOnPurchase);
+  item.purchased = true;
+}
+
+function purchaseViewedItem()
+{
+  //Purchase the item currently being viewed.
+  purchaseItem(viewedItem)
+  $("#purchaseButton").prop("disabled", true);
+}
+
 function onItemClick(e, item)
 {
+  //Event function for when a shop item is clicked.
+
+  //Creates a purchase dialog featuring the item given.
   createPurchaseDialog(item);
 }
 
 function createPurchaseDialog(item)
 {
+  //Creates a purchase dialog featuring the item given.
   $("#purchaseDialog").remove();
 
   viewedItem = item;
   let $purchaseDiv = $("<div id='purchaseDialog'></div>");
 
-  let $purchaseDialog = $purchaseDiv.dialog();
+  let $dialogImage = $(`<div id='dialogImage'/></div>`);
+  $dialogImage.css('background-image', `url('${generateThumbnailLink(DIALOG_IMAGE_SIZE, item.imageUrl)}')`)
 
-  $("body").append($purchaseDialog);
-}
+  let $dialogInfoBox = $("<div id='dialogInfoBox'></div>");
 
-function purchaseItem()
-{
-  //pass
+  let $dialogTitle = $(`<h2>${item.itemName}</h2>`);
+  let $dialogDescription = $(`<p>Purchase a ${item.itemName} today! Guaranteed delivery<p><p>Price: ¤${item.price}</p>`);
+
+  let $purchaseButtonDiv = $("<div id=purchaseButtonDiv></div>");
+  let $purchaseItemButton = $("<button id='purchaseButton' onclick='purchaseViewedItem()'>Purchase</button>").button();
+
+  $purchaseButtonDiv.append($purchaseItemButton);
+
+  $dialogInfoBox.append($dialogTitle);
+  $dialogInfoBox.append($dialogDescription);
+  $dialogInfoBox.append($purchaseButtonDiv);
+
+  $purchaseDiv.append($dialogImage);
+  $purchaseDiv.append($dialogInfoBox);
+
+  let $purchaseDialog = $purchaseDiv.dialog({
+    width: 800
+  });
+  //$("body").append($purchaseDialog);
+
+  narratorCommentFrom("item_viewed");
 }
 
 // -----------

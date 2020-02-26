@@ -43,14 +43,14 @@ const NARRATOR_DIALOGUE = {
 		"All should aspire to be even one tenth as amazing as you.",
 		"No person deserves $RECENT_ITEM more than you deserve it."
 	],
-	"item_view": [
-		"Wow. $VIEWED_ITEM sure seems useful and or interesting and or relevant for or to you.",
+	"item_viewed": [
+		"Wow. $VIEWED_ITEM sure seems useful and or interesting and or relevant to you.",
 		"There are people who have said $VIEWED_ITEM changed their lives. And you could be one of them.",
 		"$VIEWED_ITEM is on sale right now. Take my word for it.",
 		"Just look at its hues, saturations, and values. I think that they are pleasing."
 	],
-	"just_bought": [
-		"I am sure that the persons whom you find attractive will surely notice you now on account of your purchase of $RECENT_PURCHASE.",
+	"item_purchased": [
+		"I am sure that the persons whom you find attractive will surely notice you when you show off your new $RECENT_PURCHASE.",
 		"Wow. You made an excellent decision there. Bang for your buck, as the people say?",
 		"$RECENT_PURCHASE? An excellent choice. Remember, no returns, though I doubt you would want to.",
 		"I am sure it would be near impossible to find $RECENT_PURCHASE anywhere else.",
