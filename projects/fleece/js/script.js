@@ -61,6 +61,9 @@ let narratorTickInterval = 1000;
 
 let narratorSynth = window.speechSynthesis;
 
+//Used to keep track of the user's enthusiasm for pointless spending
+let score = 0;
+
 $(document).ready(setup);
 
 // -----------
@@ -302,12 +305,20 @@ function narratorTick()
 // ITEM POP-UP CODE
 // -----------
 
+//Used to increment purchasing score
+function setScore(newScore)
+{
+  score = newScore;
+  $("#scoreCounter").html(`Money Spent: ¤${score}`);
+}
+
 function purchaseItem(item)
 {
   //General item purchasing function.
   lastPurchase = item;
   narratorCommentFrom("item_purchased");
   adjustAttitude(attitudeDeltaOnPurchase);
+  setScore(score + item.price);
   item.purchased = true;
 }
 
@@ -367,8 +378,13 @@ function createPurchaseDialog(item)
 // -----------
 
 function setup() {
+  //Automatically generate shop items when the user reaches the bottom of the page
   $(window).scroll(function() { pageBottomCheck(addRandomItemToPageUntilBottom) });
   addRandomItemToPageUntilBottom();
 
-  //setInterval(narratorTick, narratorTickInterval);
+  //Start narrator quip process
+  setInterval(narratorTick, narratorTickInterval);
+
+  //Sets score to 0 (updating score elements)
+  setScore(0);
 }

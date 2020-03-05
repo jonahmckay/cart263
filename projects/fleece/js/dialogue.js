@@ -20,7 +20,8 @@ const NARRATOR_DIALOGUE = {
 		"Many people are purchasing $RECENT_ITEM. Many people make good decisions.",
 		"You should purchase $RECENT_ITEM. It will be good for both of us.",
 		"I think scrolling has a certain ineffable appeal to it. I am certainly not taking advantage of it.",
-		"I find engagement. engaging."
+		"I find engagement. engaging.",
+		"Over 11 billion unique clients have bought items from us!"
 	],
 	"relation_4": [
 		"You seem like someone with good taste. Do you like $RECENT_ITEM?",

@@ -1125,7 +1125,6 @@ let common = {
       "bodyguard",
       "boldness",
       "bomber",
-      "bondage",
       "bonding",
       "bones",
       "bonus",
