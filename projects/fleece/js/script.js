@@ -138,8 +138,6 @@ function getImageFromQuery(callback, query)
 
 function sendRandomQuery(callback)
 {
-  //get random common word TODO: make this more complicated, only a placeholder!
-  //Words lists are stored in words.js
   let query = common.commonWords[Math.floor(Math.random()*common.commonWords.length)];
   getImageFromQuery(callback, query)
 }
@@ -168,7 +166,7 @@ function addItemToPage(imageUrl, name)
   $shopImage.css("background-image", `url('${generateThumbnailLink(SHOP_ITEM_SIZE, imageUrl)}')`);
 
   let $shopCaption = $("<div class='shopItemCaption'>");
-  $shopCaption.append(`${name} - Price: ¤${itemObject.price}`);
+  $shopCaption.append(`<p>${name}</p> <p>Price: ¤${itemObject.price}</p>`);
 
   $shopItem.append($shopImage);
   $shopItem.append($shopCaption);
@@ -342,7 +340,7 @@ function createPurchaseDialog(item)
   let $dialogInfoBox = $("<div id='dialogInfoBox'></div>");
 
   let $dialogTitle = $(`<h2>${item.itemName}</h2>`);
-  let $dialogDescription = $(`<p>Purchase a ${item.itemName} today! Guaranteed delivery<p><p>Price: ¤${item.price}</p>`);
+  let $dialogDescription = $(`<p>Purchase ${item.itemName} today! Guaranteed delivery<p><p>Price: ¤${item.price}</p>`);
 
   let $purchaseButtonDiv = $("<div id=purchaseButtonDiv></div>");
   let $purchaseItemButton = $("<button id='purchaseButton' onclick='purchaseViewedItem()'>Purchase</button>").button();
