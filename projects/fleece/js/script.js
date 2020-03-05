@@ -22,10 +22,20 @@ https://commons.wikimedia.org/wiki/Commons:Project_scope#Censorship
 
 *********************************************************************/
 
+//Number of images returned by a search query
 const IMAGES_PER_QUERY = 50;
+
+//Size of shop item images scrolling through the page
 const SHOP_ITEM_SIZE = 200;
+
+//Size of the shop item image inside purchase dialogues
 const DIALOG_IMAGE_SIZE = 400;
+
+//Distance from page bottom needed to trigger item generation
 const PAGE_BOTTOM_THRESHOLD = 200;
+
+//Limits searching for non-tiff files
+const FILE_SEARCH_LIMIT = 20;
 
 //list of items in the shop, represented by object literals generated in
 //addItemToPage.
@@ -59,7 +69,8 @@ let attitudeDeltaOnPurchase = 2;
 //Used to determine how frequently the narrator will update.
 let narratorTickInterval = 1000;
 
-let narratorSynth = window.speechSynthesis;
+//Used to keep a queue of what's being said and is waiting to be said by the narrator
+let speechQueue = [];
 
 //Used to keep track of the user's enthusiasm for pointless spending
 let score = 0;
@@ -130,6 +141,22 @@ function getImageFromQuery(callback, query)
 
       //Choose a random image from those returned in the query.
       let imageChosen = data.query.pages[Object.keys(data.query.pages)[Math.floor(Math.random()*Object.keys(data.query.pages).length)]].imageinfo[0].url;
+
+      //Try to filter out .tif files because they break the thumbnail rules
+      let searchingForValidFile = 0;
+      //put limit on searching, if it fails it fails
+      while (searchingForValidFile < FILE_SEARCH_LIMIT)
+      {
+        if (imageChosen.endsWith(".tif") || imageChosen.endsWith(".tiff"))
+        {
+          searchingForValidFile++;
+          imageChosen = data.query.pages[Object.keys(data.query.pages)[Math.floor(Math.random()*Object.keys(data.query.pages).length)]].imageinfo[0].url;
+        }
+        else
+        {
+          break;
+        }
+      }
 
       //Runs the callback function provided with the file URL provided as the
       //first argument, and the query used as the second.
@@ -248,8 +275,6 @@ function adjustAttitude(delta)
 function narratorSay(text)
 {
   //Make the narrator say something.
-  //ResponsiveVoice doesn't seem to be working, so I'm using the Web Speech
-  //API instead.
   text = text.replace("$RECENT_ITEM", shopItems[shopItems.length-1].itemName);
   if (lastPurchase !== null) {
   text = text.replace("$RECENT_PURCHASE", lastPurchase.itemName);
@@ -258,9 +283,11 @@ function narratorSay(text)
   text = text.replace("$VIEWED_ITEM", viewedItem.itemName);
   }
 
-  let utterance = new SpeechSynthesisUtterance(text);
-
-  narratorSynth.speak(utterance);
+  if (speechQueue.length == 0)
+  {
+    responsiveVoice.speak(text, "UK English Male", {onend: speechEnded});
+  }
+    speechQueue.push(text);
 }
 
 function narratorQuip()
@@ -299,6 +326,18 @@ function narratorTick()
     ticksSinceLastNarratorQuip++;
   }
   adjustAttitude(attitudeDeltaPerTick);
+}
+
+function speechEnded()
+{
+  //Remove first from the speech queue
+  speechQueue.shift();
+
+  //Say next in queue, if it exists
+  if (speechQueue.length > 0)
+  {
+    responsiveVoice.speak(speechQueue[0], "UK English Male", {onend: speechEnded});
+  }
 }
 
 // -----------
