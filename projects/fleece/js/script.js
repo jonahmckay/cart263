@@ -72,6 +72,9 @@ let narratorTickInterval = 1000;
 //Used to keep a queue of what's being said and is waiting to be said by the narrator
 let speechQueue = [];
 
+//Used to avoid repeating quips
+let lastCommentData = new Object();
+
 //Used to keep track of the user's enthusiasm for pointless spending
 let score = 0;
 
@@ -308,8 +311,39 @@ function narratorQuip()
 
 function narratorCommentFrom(commentList)
 {
-  //Makes the narrator say a random phrase from one of their phraselists.
-  let commentSelected = NARRATOR_DIALOGUE[commentList][Math.floor(Math.random()*NARRATOR_DIALOGUE[commentList].length)];
+  //Makes the narrator say a random phrase from one of their phraselists,
+  //with no repeating the previous comment said.
+  //An alternative to this method would be to "shuffle" the comment arrays
+  //and then go through them iteratively, shuffling again once the end is reached
+  //to make sure there's no repeats at all until the last is reached, but
+  //I don't mind occasionally 2 phrases or so dominating, just one over and over
+  //again.
+
+  let commentSelected;
+
+  if (!lastCommentData.keys.includes(commentList))
+  {
+    lastCommentData[commentList] = -1; //-1 means never used
+  }
+
+  let possibleIndices = [];
+  //Make a list of the possible quips without the last one used
+  for (let i = 0; i < NARRATOR_DIALOGUE[commentList].length; i++)
+  {
+    //Check to see if it's not the last one, or if it's the only one
+    if (i != lastQuipIndex || NARRATOR_DIALOGUE[commentList].length <= 1)
+    {
+      possibleIndices.push(i);
+    }
+  }
+  //Select a random indice that wasn't used last time and use it for the comment
+  let indiceSelected = possibleIndices[Math.floor(Math.random()*possibleIndices.length)];
+  commentSelected = NARRATOR_DIALOGUE[commentList][indiceSelected];
+
+  //Update the lastCommentData
+  lastCommentData[commentList] = indiceSelected;
+
+  //Say the phrase
   narratorSay(commentSelected);
 }
 
