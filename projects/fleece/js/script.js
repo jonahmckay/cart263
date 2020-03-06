@@ -321,7 +321,7 @@ function narratorCommentFrom(commentList)
 
   let commentSelected;
 
-  if (!lastCommentData.keys.includes(commentList))
+  if (!Object.keys(lastCommentData).includes(commentList))
   {
     lastCommentData[commentList] = -1; //-1 means never used
   }
@@ -331,7 +331,7 @@ function narratorCommentFrom(commentList)
   for (let i = 0; i < NARRATOR_DIALOGUE[commentList].length; i++)
   {
     //Check to see if it's not the last one, or if it's the only one
-    if (i != lastQuipIndex || NARRATOR_DIALOGUE[commentList].length <= 1)
+    if (i != lastCommentData[commentList] || NARRATOR_DIALOGUE[commentList].length <= 1)
     {
       possibleIndices.push(i);
     }
