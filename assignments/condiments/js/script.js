@@ -9,8 +9,9 @@ Creates descrptions comparing condiments to cats in rooms
 
 *********************************************************************/
 
-$(document).ready(setup);
+const VOWELS = "aeiou";
 
+$(document).ready(setup);
 
 function setup() {
   $.getJSON("data/data.json")
@@ -40,6 +41,7 @@ function dataLoaded(data)
 
   let description = `${randomCondiment} ${verb} like a ${randomCat} in a ${randomRoom}`;
 
+  description = fixArticles(description);
   $("body").append(description);
 }
 
@@ -60,4 +62,49 @@ function getRandomElement(array)
     console.error("getRandomElement: array length <= 0");
   }
   return element;
+}
+
+function fixArticles(string)
+{
+  //Regular expression: matches text that has an "a" either at the start of the
+  //string or with a space preceeding it, followed by a space, followed by any
+  //vowel [aeiou], case insensitive.
+  //Matches "a orange", " a orange"
+  //Fails "area orange", "a horse"
+
+  let articleRe = /(\Aa| a) [aeiou]/i;
+
+  let stringFixed = false;
+
+  while (!stringFixed)
+ {
+    let articlePosition = string.search(articleRe);
+    if (articlePosition !== -1)
+    {
+      //Turns an "a" or "A" into an "an" or "An"
+      console.log(articlePosition);
+      let cachedString;
+      cachedString = string.slice(0, articlePosition+2) + "n" + string.slice(articlePosition+2);
+      string = cachedString;
+      console.log(string);
+    }
+    else
+    {
+      stringFixed = true;
+    }
+ }
+
+  return string;
+}
+
+function isBeginningVowel(string)
+{
+  if ("aeiou".includes(string[0]))
+  {
+    return true;
+  }
+  else
+  {
+    return false;
+  }
 }
