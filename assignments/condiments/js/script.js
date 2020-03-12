@@ -11,15 +11,30 @@ Creates descrptions comparing condiments to cats in rooms
 
 const VOWELS = "aeiou";
 
+let data;
+
 $(document).ready(setup);
 
 function setup() {
   $.getJSON("data/data.json")
   .done(dataLoaded)
   .fail(dataError);
+
+  $("html").click(function () { createDescription(); });
 }
 
-function dataLoaded(data)
+function dataLoaded(dataGotten)
+{
+  data = dataGotten;
+  createDescription();
+}
+
+function dataError(request, textStatus, error)
+{
+  console.error(error);
+}
+
+function createDescription()
 {
   console.log(data);
 
@@ -39,15 +54,15 @@ function dataLoaded(data)
   let randomRoom = getRandomElement(data.rooms);
   console.error(randomRoom);
 
-  let description = `${randomCondiment} ${verb} like a ${randomCat} in a ${randomRoom}`;
+  let randomPlanet = getRandomElement(data.minor_planets).split(" ")[1];
+
+  let randomChemical = getRandomElement(data.chemicals);
+
+  let description = `${randomCondiment} ${verb} like a ${randomCat} in a ${randomRoom} located on ${randomPlanet} and certainly does NOT have a hint of ${randomChemical}`;
 
   description = fixArticles(description);
-  $("body").append(description);
-}
-
-function dataError(request, textStatus, error)
-{
-  console.error(error);
+  $("body").empty();
+  $("body").append(`<p>${description}</p>`);
 }
 
 function getRandomElement(array)
@@ -95,16 +110,4 @@ function fixArticles(string)
  }
 
   return string;
-}
-
-function isBeginningVowel(string)
-{
-  if ("aeiou".includes(string[0]))
-  {
-    return true;
-  }
-  else
-  {
-    return false;
-  }
 }
