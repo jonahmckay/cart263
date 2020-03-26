@@ -13,7 +13,13 @@ plant to create music.
 
 $(document).ready(setup);
 
+AFRAME.registerComponent("auto-rotate", {
+  tick: function() {
+    let el = this.el;
+
+    el.object3D.rotation.y += 0.005;
+  }
+});
 
 function setup() {
-
 }
