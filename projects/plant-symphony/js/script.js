@@ -20,9 +20,12 @@ let partCount = 0;
 function getPositionFromBottom(bottomPosition, rotation, height)
 {
   let middlePosition = bottomPosition;
-  let offset = new THREE.Vector3(0, height/2, 0);
-  offset.applyEuler(rotation);
-  return middlePosition + offset;
+  let staticOffset = new THREE.Vector3(0, height/4, 0);
+  let rotatedOffset = new THREE.Vector3(0, height/4, 0);
+  //let dividedRotation = new THREE.Euler(rotation.x/2, rotation.y/2, rotation.z/2);
+  rotatedOffset.applyEuler(rotation);
+  staticOffset.add(rotatedOffset);
+  return middlePosition.add(staticOffset);
 }
 
 class Rule
@@ -101,7 +104,7 @@ class Part
 
     this.rules = [];
 
-    this.stickPosition = -1;
+    this.stickPosition = 0.5;
 
     this.relativePosition = null;
     this.relativeRotation = null;
@@ -118,6 +121,9 @@ class Part
     this.DOMObject = null;
 
     this.renderUpToDate = false;
+    this.positionUpToDate = false;
+
+    this.isRoot = false;
   }
 
   grow()
@@ -135,19 +141,40 @@ class Part
 
   calculateWorldPosition(parent)
   {
-    let bottomPosition = new THREE.Vector3(0, this.height/2, 0);
-    if (this.stickPosition < 0)
+    if (!this.positionUpToDate)
     {
-      //TODO readjust to match from difference, may need to figure out old-length
-      //caching
-    //  position = new
-    }
-    else
-    {
-      bottomPosition.y = parent.length/this.stickPosition;
-      //TODO What's the difference between relativePosition and worldPosition anymore??
-      this.relativePosition = getPositionFromBottom(bottomPosition, this.relativeRotation, this.length);
-      this.worldPosition = getPositionFromBottom(bottomPosition, this.relativeRotation, this.length);
+      if (this.isRoot)
+      {
+        this.positionUpToDate = true;
+        for (let i = 0; i < this.children.length; i++)
+        {
+          this.children[i].calculateWorldPosition(this);
+        }
+        return;
+      }
+      let bottomPosition = new THREE.Vector3(0, -this.height/2, 0);
+      //let bottomPosition = relativePosition;
+      if (this.stickPosition < 0)
+      {
+        //TODO readjust to match from difference, may need to figure out old-length
+        //caching
+      //  position = new
+      }
+      else
+      {
+        if (!parent.isRoot)
+        {
+          bottomPosition.y = -((parent.length*this.stickPosition)*2);
+        }
+        else
+        {
+          bottomPosition.y = -this.length/2;
+        }
+        //TODO What's the difference between relativePosition and worldPosition anymore??
+        this.relativePosition = getPositionFromBottom(bottomPosition, this.relativeRotation, this.length);
+        this.worldPosition = getPositionFromBottom(bottomPosition, this.relativeRotation, this.length);
+      }
+      this.positionUpToDate = true;
     }
     for (let i = 0; i < this.children.length; i++)
     {
@@ -161,14 +188,23 @@ class Part
     {
       if (this.DOMObject === null)
       {
-        this.DOMObject = document.createElement("a-cylinder");
-        // this.DOMObject.setAttribute('position', { x: this.relativePosition.x, y: this.relativePosition.y, z: this.relativePosition.z });
-        // this.DOMObject.setAttribute('rotation', { x: THREE.Math.radToDeg(this.relativeRotation.x),
-        //   y: THREE.Math.radToDeg(this.relativeRotation.y),
-        //   z: THREE.Math.radToDeg(this.relativeRotation.z) });
-
-        this.DOMObject.setAttribute("radius", this.thickness);
-        this.DOMObject.setAttribute("height", this.length);
+        if (!this.isRoot)
+        {
+          this.DOMObject = document.createElement("a-cylinder");
+        }
+        else
+        {
+          this.DOMObject = document.createElement("a-entity");
+        }
+         this.DOMObject.setAttribute('position', { x: this.relativePosition.x, y: this.relativePosition.y, z: this.relativePosition.z });
+         this.DOMObject.setAttribute('rotation', { x: THREE.Math.radToDeg(this.relativeRotation.x),
+           y: THREE.Math.radToDeg(this.relativeRotation.y),
+           z: THREE.Math.radToDeg(this.relativeRotation.z) });
+        if (!this.isRoot)
+        {
+          this.DOMObject.setAttribute("radius", this.thickness);
+          this.DOMObject.setAttribute("height", this.length);
+        }
         if (parent === null)
         {
           document.getElementsByTagName("a-scene")[0].appendChild(this.DOMObject);
@@ -179,15 +215,18 @@ class Part
         }
         this.DOMObject.object3D.position.set(this.relativePosition.x, this.relativePosition.y, this.relativePosition.z);
         this.DOMObject.object3D.rotation.set(this.relativeRotation.x, this.relativeRotation.y, this.relativeRotation.z);
-        //this.DOMObject.addEventListener('DOMContentLoaded', function () { console.log("loaded!"); renderChildren(); });
+        this.DOMObject.addEventListener('DOMContentLoaded', function () { console.log("loaded!"); renderChildren(); });
         this.renderChildren();
       }
       else
       {
         this.DOMObject.object3D.position.set(this.relativePosition.x, this.relativePosition.y, this.relativePosition.z);
         this.DOMObject.object3D.rotation.set(this.relativeRotation.x, this.relativeRotation.y, this.relativeRotation.z);
-        this.DOMObject.setAttribute("radius", this.thickness);
-        this.DOMObject.setAttribute("height", this.length);
+        if (!this.isRoot)
+        {
+          this.DOMObject.setAttribute("radius", this.thickness);
+          this.DOMObject.setAttribute("height", this.length);
+        }
         this.renderChildren();
       }
       this.renderUpToDate = true;
@@ -221,7 +260,7 @@ class Plant
 
   render()
   {
-    this.rootPart.calculateWorldPosition(this.origin);
+    this.rootPart.calculateWorldPosition(this);
     if (!this.renderUpToDate)
     {
       this.rootPart.render(null);
@@ -268,20 +307,25 @@ class Garden
 
 let garden = new Garden();
 
+let rootPart = new Part();
+rootPart.relativePosition = new THREE.Vector3(0, 0, 0);
+rootPart.relativeRotation = new THREE.Euler();
+rootPart.isRoot = true;
 let trunkPart = new Part();
 trunkPart.relativePosition = new THREE.Vector3(0, 0, 0);
-trunkPart.relativeRotation = new THREE.Vector3();
+trunkPart.relativeRotation = new THREE.Euler();
 let branchPart = new Part();
 branchPart.relativePosition = new THREE.Vector3();
-branchPart.relativeRotation = new THREE.Vector3(0.2, 0, 0);
+branchPart.relativeRotation = new THREE.Euler(1.5, 0, 0);
 branchPart.thickness = 0.2;
 branchPart.length = 4;
 
 trunkPart.children.push(branchPart);
+rootPart.children.push(trunkPart);
 
 let plant1 = new Plant();
 
-plant1.rootPart = trunkPart;
+plant1.rootPart = rootPart;
 
 garden.plants.push(plant1);
 
