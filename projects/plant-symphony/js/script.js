@@ -15,7 +15,15 @@ $(document).ready(setup);
 
 let partCount = 0;
 
-//Base class for different rules performed each plant tick.
+//Code taken from https://stackoverflow.com/a/43753414
+//TODO: More elegant/efficient solution?
+
+function clone(obj) {
+  return Object.create(
+    Object.getPrototypeOf(obj),
+    Object.getOwnPropertyDescriptors(obj)
+  );
+}
 
 function getPositionFromBottom(bottomPosition, rotation, height)
 {
@@ -28,6 +36,8 @@ function getPositionFromBottom(bottomPosition, rotation, height)
   return middlePosition.add(staticOffset);
 }
 
+//Base class for different rules performed each plant tick.
+
 class Rule
 {
   constructor()
@@ -37,7 +47,7 @@ class Rule
 
   ruleTick(target)
   {
-    if (Math.random() < baseChance)
+    if (Math.random() < this.baseChance)
     {
       this.rulePass(target);
       return true;
@@ -64,10 +74,10 @@ class Rule
 //Rule for creating new parts.
 class ProductionRule extends Rule
 {
-  constructor()
+  constructor(part)
   {
     super();
-    this.basePart = null;
+    this.basePart = part;
 
     this.baseChance = 0.1;
     this.baseTypeCap = 100;
@@ -76,11 +86,15 @@ class ProductionRule extends Rule
   rulePass(target)
   {
     this.produce(target)
+    return true;
   }
 
   produce(target)
   {
-    let newPart = basePart;
+    let newPart = clone(this.basePart);
+    newPart.relativeRotation = new THREE.Euler((Math.random()*Math.PI*2), 0, (Math.random()*Math.PI*2));
+    newPart.stickPosition = Math.random();
+    target.addChild(newPart);
   }
 }
 
@@ -90,9 +104,22 @@ class GrowthRule extends Rule
   constructor()
   {
     super();
-    this.baseChance = 0.5;
+    this.baseChance = 0.025;
+    this.lengthDelta = 0.02;
+    this.thicknessDelta = 0.0001;
   }
 
+  rulePass(target)
+  {
+    this.modify(target);
+    return true;
+  }
+
+  modify(target)
+  {
+    target.length += this.lengthDelta;
+    target.thickness += this.thicknessDelta;
+  }
 }
 
 //Class defining a plant part.
@@ -104,7 +131,7 @@ class Part
 
     this.rules = [];
 
-    this.stickPosition = 0.5;
+    this.stickPosition = 1; // 0 to 1
 
     this.relativePosition = null;
     this.relativeRotation = null;
@@ -124,6 +151,16 @@ class Part
     this.positionUpToDate = false;
 
     this.isRoot = false;
+  }
+
+  addChild(child)
+  {
+    this.children.push(child);
+  }
+
+  addRule(rule)
+  {
+    this.rules.push(rule);
   }
 
   grow()
@@ -164,7 +201,7 @@ class Part
       {
         if (!parent.isRoot)
         {
-          bottomPosition.y = -((parent.length*this.stickPosition)*2);
+          bottomPosition.y = -((parent.length*(-this.stickPosition+1)));
         }
         else
         {
@@ -316,11 +353,19 @@ trunkPart.relativePosition = new THREE.Vector3(0, 0, 0);
 trunkPart.relativeRotation = new THREE.Euler();
 let branchPart = new Part();
 branchPart.relativePosition = new THREE.Vector3();
-branchPart.relativeRotation = new THREE.Euler(1.5, 0, 0);
-branchPart.thickness = 0.2;
-branchPart.length = 4;
+branchPart.relativeRotation = new THREE.Euler(0.5, 0, 0);
+branchPart.thickness = 0.1;
+branchPart.length = 0.5;
 
-trunkPart.children.push(branchPart);
+let newBranchRule = new ProductionRule(branchPart);
+//let growTrunkRule = new GrowthRule();
+let growBranchRule = new GrowthRule();
+
+//trunkPart.addRule(growTrunkRule);
+trunkPart.addRule(newBranchRule);
+branchPart.addRule(growBranchRule);
+
+//trunkPart.children.push(branchPart);
 rootPart.children.push(trunkPart);
 
 let plant1 = new Plant();
@@ -340,6 +385,7 @@ AFRAME.registerComponent("auto-render", {
   tick: function()
   {
     garden.gardenRenderStep();
+    garden.gardenGrowStep();
   }
 
 })
