@@ -20,11 +20,22 @@ let framesPerGrowth = 10;
 //Code taken from https://stackoverflow.com/a/43753414
 //TODO: More elegant/efficient solution?
 
-function clone(obj) {
-  return Object.create(
-    Object.getPrototypeOf(obj),
-    Object.getOwnPropertyDescriptors(obj)
-  );
+function clonePart(part) {
+  let newPart = new Part();
+
+  newPart.length = part.length;
+  newPart.lastLength = part.length;
+  newPart.thickness = part.thickness;
+  newPart.rules = part.rules;
+  newPart.relativePosition = new THREE.Vector3();
+  newPart.relativeRotation = new THREE.Euler((Math.random()*Math.PI*2), 0, (Math.random()*Math.PI*2));
+  newPart.stickPosition = Math.random();
+  newPart.partID = partCount;
+  partCount++;
+  //alert(newPart.stickPosition);
+  newPart.children = [];
+
+  return newPart;
 }
 
 function getPositionFromBottom(bottomPosition, rotation, height)
@@ -34,7 +45,7 @@ function getPositionFromBottom(bottomPosition, rotation, height)
   let rotatedOffset = new THREE.Vector3(0, height/4, 0);
   //let dividedRotation = new THREE.Euler(rotation.x/2, rotation.y/2, rotation.z/2);
   staticOffset.add(rotatedOffset);
-  staticOffset.applyEuler(new THREE.Euler(rotation.x, rotation.y, rotation.z));
+  staticOffset.applyEuler(rotation);
 
 
 
@@ -96,12 +107,7 @@ class ProductionRule extends Rule
 
   produce(target)
   {
-    let newPart = clone(this.basePart);
-    newPart.relativeRotation = new THREE.Euler((Math.random()*Math.PI*2), 0, (Math.random()*Math.PI*2));
-    newPart.stickPosition = Math.random();
-    newPart.partID = `part${partCount}`;
-    partCount++;
-    //alert(newPart.stickPosition);
+    let newPart = clonePart(this.basePart);
     target.addChild(newPart);
   }
 }
@@ -149,12 +155,10 @@ class Part
     this.length = 2;
     this.lastLength = this.length;
 
-    this.stickPositionOffset = null;
-
     this.worldPosition = null;
     this.worldRotation = null;
 
-    this.partID = `part${partCount}`;
+    this.partID = partCount;
     partCount++;
 
     this.DOMObject = null;
@@ -219,7 +223,6 @@ class Part
         this.stickPosition = this.stickPosition*(parent.lastLength/parent.length);
       }
       let heightOffset = new THREE.Vector3(0, parent.length*(this.stickPosition-0.5), 0);
-      this.stickPositionOffset = heightOffset;
       this.positionUpToDate = true;
       this.relativePosition = heightOffset;
       //alert(heightOffset.y);
@@ -375,9 +378,10 @@ let newBranchRule = new ProductionRule(branchPart);
 let growTrunkRule = new GrowthRule();
 let growBranchRule = new GrowthRule();
 
-trunkPart.addRule(growTrunkRule);
+//trunkPart.addRule(growTrunkRule);
 trunkPart.addRule(newBranchRule);
-branchPart.addRule(growBranchRule);
+//branchPart.addRule(growBranchRule);
+branchPart.addRule(newBranchRule);
 
 //trunkPart.children.push(branchPart);
 rootPart.children.push(trunkPart);
