@@ -29,12 +29,13 @@ function clone(obj) {
 
 function getPositionFromBottom(bottomPosition, rotation, height)
 {
-  let middlePosition = bottomPosition;
+  let middlePosition = new THREE.Vector3().copy(bottomPosition);
   let staticOffset = new THREE.Vector3(0, height/4, 0);
   let rotatedOffset = new THREE.Vector3(0, height/4, 0);
   //let dividedRotation = new THREE.Euler(rotation.x/2, rotation.y/2, rotation.z/2);
-  staticOffset.applyEuler(new THREE.Euler(-rotation.x, -rotation.y, -rotation.z));
   staticOffset.add(rotatedOffset);
+  staticOffset.applyEuler(new THREE.Euler(rotation.x, rotation.y, rotation.z));
+
 
 
   return middlePosition.add(staticOffset);
@@ -98,6 +99,8 @@ class ProductionRule extends Rule
     let newPart = clone(this.basePart);
     newPart.relativeRotation = new THREE.Euler((Math.random()*Math.PI*2), 0, (Math.random()*Math.PI*2));
     newPart.stickPosition = Math.random();
+    newPart.partID = `part${partCount}`;
+    partCount++;
     //alert(newPart.stickPosition);
     target.addChild(newPart);
   }
@@ -122,7 +125,7 @@ class GrowthRule extends Rule
 
   modify(target)
   {
-    target.length += this.lengthDelta;
+    target.changeLength(this.lengthDelta);
     target.thickness += this.thicknessDelta;
   }
 }
@@ -136,7 +139,8 @@ class Part
 
     this.rules = [];
 
-    this.stickPosition = 1; // 0 to 1
+    this.stickPosition = 0.4; // 0 to 1
+    this.stickPositionFixed = false;
 
     this.relativePosition = null;
     this.relativeRotation = null;
@@ -144,6 +148,8 @@ class Part
     this.thickness = 0.5;
     this.length = 2;
     this.lastLength = this.length;
+
+    this.stickPositionOffset = null;
 
     this.worldPosition = null;
     this.worldRotation = null;
@@ -169,6 +175,17 @@ class Part
     this.rules.push(rule);
   }
 
+  changeLength(delta)
+  {
+    this.lastLength = this.length;
+    this.length += delta;
+    for (let i = 0; i < this.children.length; i++)
+    {
+      this.children[i].positionUpToDate = false;
+      this.children[i].calculateStickPosition(this);
+    }
+  }
+
   grow()
   {
     for (let i = 0; i < this.children.length; i++)
@@ -182,46 +199,34 @@ class Part
     this.renderUpToDate = false;
   }
 
-  calculateWorldPosition(parent)
+  calculateStickPosition(parent)
   {
     if (!this.positionUpToDate)
     {
+      //alert(this.partID);
       if (this.isRoot)
       {
         this.positionUpToDate = true;
         for (let i = 0; i < this.children.length; i++)
         {
-          this.children[i].calculateWorldPosition(this);
+          this.children[i].calculateStickPosition(this);
         }
         return;
       }
-      let bottomPosition = new THREE.Vector3(0, -this.height/2, 0);
-      //let bottomPosition = relativePosition;
-      if (this.stickPosition < 0)
-      {
-        //TODO readjust to match from difference, may need to figure out old-length
-        //caching
-      //  position = new
-      }
       else
+      if (!this.stickPositionFixed)
       {
-        if (!parent.isRoot)
-        {
-          bottomPosition.y = -((parent.length*(-this.stickPosition+0.5)));
-        }
-        else
-        {
-          bottomPosition.y = -this.length/2;
-        }
-        //TODO What's the difference between relativePosition and worldPosition anymore??
-        this.relativePosition = getPositionFromBottom(bottomPosition, this.relativeRotation, this.length);
-        this.worldPosition = getPositionFromBottom(bottomPosition, this.relativeRotation, this.length);
+        this.stickPosition = this.stickPosition*(parent.lastLength/parent.length);
       }
+      let heightOffset = new THREE.Vector3(0, parent.length*(this.stickPosition-0.5), 0);
+      this.stickPositionOffset = heightOffset;
       this.positionUpToDate = true;
+      this.relativePosition = heightOffset;
+      //alert(heightOffset.y);
     }
     for (let i = 0; i < this.children.length; i++)
     {
-      this.children[i].calculateWorldPosition(this);
+      this.children[i].calculateStickPosition(this);
     }
   }
 
@@ -229,6 +234,7 @@ class Part
   {
     if (!this.renderUpToDate)
     {
+      let realPosition = getPositionFromBottom(this.relativePosition, this.relativeRotation, this.length);
       if (this.DOMObject === null)
       {
         if (!this.isRoot)
@@ -239,7 +245,7 @@ class Part
         {
           this.DOMObject = document.createElement("a-entity");
         }
-         this.DOMObject.setAttribute('position', { x: this.relativePosition.x, y: this.relativePosition.y, z: this.relativePosition.z });
+         this.DOMObject.setAttribute('position', { x: realPosition.x, y: realPosition.y, z: realPosition.z });
          this.DOMObject.setAttribute('rotation', { x: THREE.Math.radToDeg(this.relativeRotation.x),
            y: THREE.Math.radToDeg(this.relativeRotation.y),
            z: THREE.Math.radToDeg(this.relativeRotation.z) });
@@ -256,14 +262,14 @@ class Part
         {
           parent.DOMObject.appendChild(this.DOMObject);
         }
-        this.DOMObject.object3D.position.set(this.relativePosition.x, this.relativePosition.y, this.relativePosition.z);
+        this.DOMObject.object3D.position.set(realPosition.x, realPosition.y, realPosition.z);
         this.DOMObject.object3D.rotation.set(THREE.Math.radToDeg(this.relativeRotation.x), THREE.Math.radToDeg(this.relativeRotation.y), THREE.Math.radToDeg(this.relativeRotation.z));
         this.DOMObject.addEventListener('DOMContentLoaded', function () { console.log("loaded!"); renderChildren(); });
         this.renderChildren();
       }
       else
       {
-        this.DOMObject.object3D.position.set(this.relativePosition.x, this.relativePosition.y, this.relativePosition.z);
+        this.DOMObject.object3D.position.set(realPosition.x, realPosition.y, realPosition.z);
       //  this.DOMObject.object3D.rotation.set(THREE.Math.radToDeg(this.relativeRotation.x), THREE.Math.radToDeg(this.relativeRotation.y), THREE.Math.radToDeg(this.relativeRotation.z));
         if (!this.isRoot)
         {
@@ -303,7 +309,7 @@ class Plant
 
   render()
   {
-    this.rootPart.calculateWorldPosition(this);
+    this.rootPart.calculateStickPosition(this);
     if (!this.renderUpToDate)
     {
       this.rootPart.render(null);
@@ -354,6 +360,7 @@ let rootPart = new Part();
 rootPart.relativePosition = new THREE.Vector3(0, 0, 0);
 rootPart.relativeRotation = new THREE.Euler();
 rootPart.isRoot = true;
+rootPart.length = 0;
 let trunkPart = new Part();
 trunkPart.thickness = 0.01;
 trunkPart.relativePosition = new THREE.Vector3(0, 0, 0);
@@ -365,10 +372,10 @@ branchPart.thickness = 0.1;
 branchPart.length = 0.5;
 
 let newBranchRule = new ProductionRule(branchPart);
-//let growTrunkRule = new GrowthRule();
+let growTrunkRule = new GrowthRule();
 let growBranchRule = new GrowthRule();
 
-//trunkPart.addRule(growTrunkRule);
+trunkPart.addRule(growTrunkRule);
 trunkPart.addRule(newBranchRule);
 branchPart.addRule(growBranchRule);
 
