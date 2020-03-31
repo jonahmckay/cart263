@@ -38,18 +38,15 @@ function clonePart(part) {
   return newPart;
 }
 
-function getPositionFromBottom(bottomPosition, rotation, height)
+function getPositionFromBottom(bottomPosition, rotation, length)
 {
   let middlePosition = new THREE.Vector3().copy(bottomPosition);
-  let staticOffset = new THREE.Vector3(0, height/4, 0);
-  let rotatedOffset = new THREE.Vector3(0, height/4, 0);
-  //let dividedRotation = new THREE.Euler(rotation.x/2, rotation.y/2, rotation.z/2);
-  staticOffset.add(rotatedOffset);
-  staticOffset.applyEuler(rotation);
 
+  let rotatedOffset = new THREE.Vector3(0, length/2, 0);
+  let lengthRotation = new THREE.Euler(rotation.x, 0, rotation.z);
+  rotatedOffset.applyEuler(lengthRotation);
 
-
-  return middlePosition.add(staticOffset);
+  return middlePosition.add(rotatedOffset);
 }
 
 //Base class for different rules performed each plant tick.
@@ -75,12 +72,12 @@ class Rule
     }
   }
 
-  rulePass()
+  rulePass(target)
   {
     return false;
   }
 
-  ruleFail()
+  ruleFail(target)
   {
     return false;
   }
@@ -366,6 +363,8 @@ rootPart.isRoot = true;
 rootPart.length = 0;
 let trunkPart = new Part();
 trunkPart.thickness = 0.01;
+trunkPart.length = 2;
+trunkPart.lastLength = 2;
 trunkPart.relativePosition = new THREE.Vector3(0, 0, 0);
 trunkPart.relativeRotation = new THREE.Euler();
 let branchPart = new Part();
@@ -375,13 +374,15 @@ branchPart.thickness = 0.1;
 branchPart.length = 0.5;
 
 let newBranchRule = new ProductionRule(branchPart);
+let newBranchRuleLowChance = new ProductionRule(branchPart);
+newBranchRuleLowChance.baseChance = 0.03;
 let growTrunkRule = new GrowthRule();
 let growBranchRule = new GrowthRule();
 
-//trunkPart.addRule(growTrunkRule);
+trunkPart.addRule(growTrunkRule);
 trunkPart.addRule(newBranchRule);
-//branchPart.addRule(growBranchRule);
-branchPart.addRule(newBranchRule);
+branchPart.addRule(newBranchRuleLowChance);
+branchPart.addRule(growBranchRule);
 
 //trunkPart.children.push(branchPart);
 rootPart.children.push(trunkPart);
