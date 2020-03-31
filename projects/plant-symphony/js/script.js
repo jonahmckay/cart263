@@ -14,6 +14,8 @@ plant to create music.
 $(document).ready(setup);
 
 let partCount = 0;
+let framesSinceLastGrowth = 0;
+let framesPerGrowth = 10;
 
 //Code taken from https://stackoverflow.com/a/43753414
 //TODO: More elegant/efficient solution?
@@ -31,8 +33,10 @@ function getPositionFromBottom(bottomPosition, rotation, height)
   let staticOffset = new THREE.Vector3(0, height/4, 0);
   let rotatedOffset = new THREE.Vector3(0, height/4, 0);
   //let dividedRotation = new THREE.Euler(rotation.x/2, rotation.y/2, rotation.z/2);
-  rotatedOffset.applyEuler(rotation);
+  staticOffset.applyEuler(new THREE.Euler(-rotation.x, -rotation.y, -rotation.z));
   staticOffset.add(rotatedOffset);
+
+
   return middlePosition.add(staticOffset);
 }
 
@@ -94,6 +98,7 @@ class ProductionRule extends Rule
     let newPart = clone(this.basePart);
     newPart.relativeRotation = new THREE.Euler((Math.random()*Math.PI*2), 0, (Math.random()*Math.PI*2));
     newPart.stickPosition = Math.random();
+    //alert(newPart.stickPosition);
     target.addChild(newPart);
   }
 }
@@ -105,7 +110,7 @@ class GrowthRule extends Rule
   {
     super();
     this.baseChance = 0.025;
-    this.lengthDelta = 0.02;
+    this.lengthDelta = 0.22;
     this.thicknessDelta = 0.0001;
   }
 
@@ -138,6 +143,7 @@ class Part
 
     this.thickness = 0.5;
     this.length = 2;
+    this.lastLength = this.length;
 
     this.worldPosition = null;
     this.worldRotation = null;
@@ -201,7 +207,7 @@ class Part
       {
         if (!parent.isRoot)
         {
-          bottomPosition.y = -((parent.length*(-this.stickPosition+1)));
+          bottomPosition.y = -((parent.length*(-this.stickPosition+0.5)));
         }
         else
         {
@@ -251,14 +257,14 @@ class Part
           parent.DOMObject.appendChild(this.DOMObject);
         }
         this.DOMObject.object3D.position.set(this.relativePosition.x, this.relativePosition.y, this.relativePosition.z);
-        this.DOMObject.object3D.rotation.set(this.relativeRotation.x, this.relativeRotation.y, this.relativeRotation.z);
+        this.DOMObject.object3D.rotation.set(THREE.Math.radToDeg(this.relativeRotation.x), THREE.Math.radToDeg(this.relativeRotation.y), THREE.Math.radToDeg(this.relativeRotation.z));
         this.DOMObject.addEventListener('DOMContentLoaded', function () { console.log("loaded!"); renderChildren(); });
         this.renderChildren();
       }
       else
       {
         this.DOMObject.object3D.position.set(this.relativePosition.x, this.relativePosition.y, this.relativePosition.z);
-        this.DOMObject.object3D.rotation.set(this.relativeRotation.x, this.relativeRotation.y, this.relativeRotation.z);
+      //  this.DOMObject.object3D.rotation.set(THREE.Math.radToDeg(this.relativeRotation.x), THREE.Math.radToDeg(this.relativeRotation.y), THREE.Math.radToDeg(this.relativeRotation.z));
         if (!this.isRoot)
         {
           this.DOMObject.setAttribute("radius", this.thickness);
@@ -349,6 +355,7 @@ rootPart.relativePosition = new THREE.Vector3(0, 0, 0);
 rootPart.relativeRotation = new THREE.Euler();
 rootPart.isRoot = true;
 let trunkPart = new Part();
+trunkPart.thickness = 0.01;
 trunkPart.relativePosition = new THREE.Vector3(0, 0, 0);
 trunkPart.relativeRotation = new THREE.Euler();
 let branchPart = new Part();
@@ -385,7 +392,15 @@ AFRAME.registerComponent("auto-render", {
   tick: function()
   {
     garden.gardenRenderStep();
-    garden.gardenGrowStep();
+    if (framesSinceLastGrowth >= framesPerGrowth)
+    {
+      garden.gardenGrowStep();
+      framesSinceLastGrowth = 0;
+    }
+    else
+    {
+      framesSinceLastGrowth++;
+    }
   }
 
 })
