@@ -13,15 +13,25 @@ plant to create music.
 
 $(document).ready(setup);
 
+//Amount of parts created. Used by partID.
+//TODO: This will break if I ever make a save/reload function.
 let partCount = 0;
+
+//Growth tick variables.
+//TODO: These should not be globals just hanging out, ideally these should be in
+//a Simulation class or something simular.
+
+//Growth simulation tick variables.
 let framesSinceLastGrowth = 0;
 let framesPerGrowth = 10;
+//Whether or not to run growth ticks at all.
 let growthRunning = true;
 
-//Code taken from https://stackoverflow.com/a/43753414
-//TODO: More elegant/efficient solution?
-
 function clonePart(part) {
+  //Clones a part.
+  //TODO: Make this actually consider things like rotation instead
+  //of just randomizing them. This is a bad solution, these things should be
+  //done in production rules!
   let newPart = new Part();
 
   newPart.length = part.length;
@@ -33,7 +43,7 @@ function clonePart(part) {
   newPart.stickPosition = Math.random();
   newPart.partID = partCount;
   partCount++;
-  //alert(newPart.stickPosition);
+
   newPart.children = [];
 
   return newPart;
@@ -41,6 +51,16 @@ function clonePart(part) {
 
 function getPositionFromBottom(bottomPosition, rotation, length)
 {
+  //Gets the middle position of a cylinder based on its bottom position.
+  //Used because AFrame primitive positions are calculated from their middle,
+  //not their bottom, because that would be convenient for me.
+
+  //Unfortunately I'm not great at vector math and such, so this only works if
+  //the cylinder in question has no Y rotation as represented by Euler Angles.
+  //Luckily I don't _need_ Y rotation, but it is an annoying restriction.
+  //TODO: Solve this issue by either making it work with Y rotation, or perhaps by
+  //making parts use a custom 3D model with its origin at the bottom?
+
   let middlePosition = new THREE.Vector3().copy(bottomPosition);
 
   let rotatedOffset = new THREE.Vector3(0, length/2, 0);
@@ -50,8 +70,7 @@ function getPositionFromBottom(bottomPosition, rotation, length)
   return middlePosition.add(rotatedOffset);
 }
 
-//Base class for different rules performed each plant tick.
-
+//Base class for different rules performed each part growth tick.
 class Rule
 {
   constructor()
@@ -62,6 +81,7 @@ class Rule
 
   ruleTick(target)
   {
+    //Placeholder, simply checks against baseChance.
     if (Math.random() < this.baseChance)
     {
       this.rulePass(target);
@@ -106,12 +126,16 @@ class ProductionRule extends Rule
 
   produce(target)
   {
+    //Adds this rule's part to the rule's target.
     let newPart = clonePart(this.basePart);
     target.addChild(newPart);
   }
 }
 
 //Rule for growing a part.
+//TODO: Consider making rules that adjust other factors of a part,
+//like colour, rotation, relative position and stickPosition.
+//If so, possibly consider rennaming GrowthRule to ModifyRule?
 class GrowthRule extends Rule
 {
   constructor()
@@ -130,6 +154,8 @@ class GrowthRule extends Rule
 
   modify(target)
   {
+    //Modify this rule's target according to its rules. Growth rules
+    //modify length and thickness.
     target.changeLength(this.lengthDelta);
     target.thickness += this.thicknessDelta;
   }
@@ -140,45 +166,66 @@ class Part
 {
   constructor()
   {
+    //The part's child parts.
     this.children = [];
 
+    //The part's rules, determines it's behaviour in growth ticks.
     this.rules = [];
 
+    //stickPosition determines this parts' position "along" its parent part.
+    //stickPositionFixed determines whether when its parent changes length,
+    //whether or not it "follows" with it.
     this.stickPosition = 0.4; // 0 to 1
     this.stickPositionFixed = false;
 
+    //relativePosition is essentially a cached location for rendering determined
+    //by stickPosition. relativeRotation is generally constant and determines this
+    //parts rotation relative to its parent.
     this.relativePosition = null;
     this.relativeRotation = null;
 
+    //All parts are cylinders, which have a thickness and a length.
+    //lastLength is used for adjusting relative position if this part's children
+    //have stickPositionFixed.
     this.thickness = 0.5;
     this.length = 2;
     this.lastLength = this.length;
 
+    //partID is a unique ID for this specific part. Not necesarially human readable.
     this.partID = partCount;
     partCount++;
 
+    //name is a human readable and given name to each part type.
     this.name = "unnamedPart";
 
+    //The AFrame object representing this part in the DOM.
     this.DOMObject = null;
 
+    //Used for determining whether these things need to be recalculated.
     this.renderUpToDate = false;
     this.positionUpToDate = false;
 
+    //Whether or not this part is its owner plant's root, or if it's a "prototype"
+    //part, whether its intended to be used as a root.
     this.isRoot = false;
   }
 
   addChild(child)
   {
+    //Adds a child part to this part.
     this.children.push(child);
   }
 
   addRule(rule)
   {
+    //Adds a rule to this part.
     this.rules.push(rule);
   }
 
   changeLength(delta)
   {
+    //Changes the length of the part by delta, then updates its children's positions
+    //to adjust.
     this.lastLength = this.length;
     this.length += delta;
     for (let i = 0; i < this.children.length; i++)
@@ -190,6 +237,7 @@ class Part
 
   grow()
   {
+    //Procs this part's rules, as well as those of its children.
     for (let i = 0; i < this.children.length; i++)
     {
       this.children[i].grow();
@@ -198,11 +246,11 @@ class Part
     {
       this.rules[i].ruleTick(this);
     }
-    this.renderUpToDate = false;
   }
 
   calculateStickPosition(parent)
   {
+    //Calculates the sticks relative position to its parent.
     if (!this.positionUpToDate)
     {
       //alert(this.partID);
@@ -223,7 +271,6 @@ class Part
       let heightOffset = new THREE.Vector3(0, parent.length*(this.stickPosition-0.5), 0);
       this.positionUpToDate = true;
       this.relativePosition = heightOffset;
-      //alert(heightOffset.y);
     }
     for (let i = 0; i < this.children.length; i++)
     {
@@ -233,6 +280,9 @@ class Part
 
   render(parent)
   {
+    //Renders the plant in the world by checking how it needs to update itself
+    //in the AFrame DOM to reflect the Part classes' state.
+
     if (!this.renderUpToDate)
     {
       let realPosition = getPositionFromBottom(this.relativePosition, this.relativeRotation, this.length);
@@ -290,6 +340,7 @@ class Part
 
   renderChildren()
   {
+    //Renders this parts' children.
     for (let i = 0; i < this.children.length; i++)
     {
       this.children[i].render(this);
@@ -304,10 +355,14 @@ class Plant
   {
     this.rootPart = null;
     this.renderUpToDate = false;
+    this.name = "unnamedPlant"
+    this.worldPosition = new THREE.Vector3(0, 0, 0);
   }
 
   render()
   {
+    //Renders the plant in the world by updating the AFrame DOM to reflect the
+    //plant's state.
     this.rootPart.calculateStickPosition(this);
     if (!this.renderUpToDate)
     {
@@ -318,6 +373,8 @@ class Plant
 
   grow()
   {
+    //Procs rules for all of the parts in the plant, by having it start with the
+    //root part outward.
     this.rootPart.grow();
     this.renderUpToDate = false;
   }
@@ -325,6 +382,7 @@ class Plant
 
 class Garden
 {
+  //Garden class, stores information about the plants, parts and rules created.
   constructor()
   {
     this.plants = [];
@@ -334,11 +392,13 @@ class Garden
 
   addPlant(plant)
   {
+    //Function for adding a plant to the garden.
     this.plants.append(plant);
   }
 
   gardenGrowStep()
   {
+    //Makes all plants proc their rules.
     for (let i = 0; i < this.plants.length; i++)
     {
       this.plants[i].grow();
@@ -347,7 +407,7 @@ class Garden
 
   gardenRenderStep()
   {
-
+    //Makes plants update their display in the AFrame DOM.
     for (let i = 0; i < this.plants.length; i++)
     {
       this.plants[i].render();
@@ -355,8 +415,12 @@ class Garden
   }
 }
 
+//Garden variable, also used in ui.js. Sort of a master class, storing
+//all information about the plants and possibly music when that gets
+//implemented.
 let garden = new Garden();
 
+//Debug plant & rules
 let rootPart = new Part();
 rootPart.relativePosition = new THREE.Vector3(0, 0, 0);
 rootPart.relativeRotation = new THREE.Euler();
@@ -388,19 +452,22 @@ trunkPart.addRule(newBranchRule);
 branchPart.addRule(newBranchRuleLowChance);
 branchPart.addRule(growBranchRule);
 
-//trunkPart.children.push(branchPart);
 rootPart.children.push(trunkPart);
 
+//Define plant and add to the garden
 let plant1 = new Plant();
 
 plant1.rootPart = rootPart;
 
 garden.plants.push(plant1);
 
+//Add defined rules and parts to the garden
 garden.definedParts.push(rootPart);
 garden.definedParts.push(trunkPart);
 garden.definedParts.push(branchPart);
 
+//auto-rotate component, rotates the camera around the scene by a set speed.
+//TODO: magic numbers are bad, define rotation speed in a variable?
 AFRAME.registerComponent("auto-rotate", {
   tick: function() {
     let el = this.el;
@@ -408,6 +475,8 @@ AFRAME.registerComponent("auto-rotate", {
   }
 });
 
+//auto-render component, automatically runs gardenRenderStep and handles
+//growth simulation ticks.
 AFRAME.registerComponent("auto-render", {
   tick: function()
   {
