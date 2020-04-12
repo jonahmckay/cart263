@@ -16,6 +16,7 @@ $(document).ready(setup);
 let partCount = 0;
 let framesSinceLastGrowth = 0;
 let framesPerGrowth = 10;
+let growthRunning = true;
 
 //Code taken from https://stackoverflow.com/a/43753414
 //TODO: More elegant/efficient solution?
@@ -56,6 +57,7 @@ class Rule
   constructor()
   {
     this.baseChance = 0.1;
+    this.name = "unnamedRule";
   }
 
   ruleTick(target)
@@ -152,11 +154,10 @@ class Part
     this.length = 2;
     this.lastLength = this.length;
 
-    this.worldPosition = null;
-    this.worldRotation = null;
-
     this.partID = partCount;
     partCount++;
+
+    this.name = "unnamedPart";
 
     this.DOMObject = null;
 
@@ -301,8 +302,6 @@ class Plant
 {
   constructor()
   {
-    this.worldPosition = null;
-    this.worldRotation = null;
     this.rootPart = null;
     this.renderUpToDate = false;
   }
@@ -329,6 +328,8 @@ class Garden
   constructor()
   {
     this.plants = [];
+    this.definedRules = [];
+    this.definedParts = [];
   }
 
   addPlant(plant)
@@ -361,17 +362,20 @@ rootPart.relativePosition = new THREE.Vector3(0, 0, 0);
 rootPart.relativeRotation = new THREE.Euler();
 rootPart.isRoot = true;
 rootPart.length = 0;
+rootPart.name = "Root";
 let trunkPart = new Part();
 trunkPart.thickness = 0.01;
 trunkPart.length = 2;
 trunkPart.lastLength = 2;
 trunkPart.relativePosition = new THREE.Vector3(0, 0, 0);
 trunkPart.relativeRotation = new THREE.Euler();
+trunkPart.name = "Trunk";
 let branchPart = new Part();
 branchPart.relativePosition = new THREE.Vector3();
 branchPart.relativeRotation = new THREE.Euler(0.5, 0, 0);
 branchPart.thickness = 0.1;
 branchPart.length = 0.5;
+branchPart.name = "Branch";
 
 let newBranchRule = new ProductionRule(branchPart);
 let newBranchRuleLowChance = new ProductionRule(branchPart);
@@ -393,6 +397,10 @@ plant1.rootPart = rootPart;
 
 garden.plants.push(plant1);
 
+garden.definedParts.push(rootPart);
+garden.definedParts.push(trunkPart);
+garden.definedParts.push(branchPart);
+
 AFRAME.registerComponent("auto-rotate", {
   tick: function() {
     let el = this.el;
@@ -411,7 +419,10 @@ AFRAME.registerComponent("auto-render", {
     }
     else
     {
-      framesSinceLastGrowth++;
+      if (growthRunning)
+      {
+        framesSinceLastGrowth++;
+      }
     }
   }
 

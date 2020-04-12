@@ -2,12 +2,60 @@ body {
 
 }
 
+.barButton
+{
+  width: 100px;
+  height: 100px;
+  margin: 10px;
+}
+
 #UIBar
 {
   width: 100%;
   height: 100px;
-  background-color: green;
   z-index: 10;
   position: fixed;
   top: 0;
+}
+
+#partsButton
+{
+  background-image: url('../assets/images/partsicon.png');
+  background-size: cover;
+}
+
+#rulesButton
+{
+  background-image: url('../assets/images/rulesicon.png');
+  background-size: cover;
+}
+
+#plantButton
+{
+  background-image: url('../assets/images/planticon.png');
+  background-size: cover;
+}
+
+#simulationButton
+{
+  background-image: url('../assets/images/simulationicon.png');
+  background-size: cover;
+}
+
+#musicButton
+{
+  background-image: url('../assets/images/musicicon.png');
+  background-size: cover;
+}
+
+#playButton
+{
+  background-image: url('../assets/images/playicon.png');
+  background-size: cover;
+}
+
+#pauseButton
+{
+  background-image: url('../assets/images/pauseicon.png');
+  background-size: cover;
 }
