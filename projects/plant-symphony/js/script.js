@@ -109,6 +109,15 @@ class ProductionRule extends Rule
 
     this.baseChance = 0.1;
     this.baseTypeCap = 100;
+
+    this.baseXRotation = 20;
+    this.xRotationVariability = 10;
+
+    this.baseYRotation = 0;
+    this.yRotationVariability = 360;
+
+    this.baseZRotation = 0;
+    this.zRotationVariability = 0;
   }
 
   rulePass(target)
@@ -133,7 +142,11 @@ class ProductionRule extends Rule
     {
       let newPart = clonePart(this.basePart);
 
-      newPart.relativeRotation = new THREE.Euler((Math.random()*Math.PI*2), 0, (Math.random()*Math.PI*2));
+      let xRotation = this.baseXRotation+(Math.random()*this.xRotationVariability)-(this.xRotationVariability/2);
+      let yRotation = this.baseYRotation+(Math.random()*this.yRotationVariability)-(this.yRotationVariability/2);
+      let zRotation = this.baseZRotation+(Math.random()*this.zRotationVariability)-(this.zRotationVariability/2);
+
+      newPart.relativeRotation = new THREE.Euler(xRotation * (Math.PI/180), yRotation * (Math.PI/180), zRotation * (Math.PI/180));
       newPart.stickPosition = Math.random();
       target.addChild(newPart);
     }
@@ -154,7 +167,7 @@ class GrowthRule extends Rule
 
     this.baseChance = 0.025;
     this.lengthDelta = 0.22;
-    this.thicknessDelta = 0.0001;
+    this.thicknessDelta = 0.001;
   }
 
   rulePass(target)
@@ -212,10 +225,15 @@ class Part
 
     //The AFrame object representing this part in the DOM.
     this.DOMObject = null;
+    //Child that represents the displayed model;
+    this.DisplayDOMObject = null;
 
     //Used for determining whether these things need to be recalculated.
     this.renderUpToDate = false;
     this.positionUpToDate = false;
+
+    //Used for determining the display model of the part.
+    this.model = "organic";
 
     //Whether or not this part is its owner plant's root, or if it's a "prototype"
     //part, whether its intended to be used as a root.
@@ -290,7 +308,7 @@ class Part
       {
         this.stickPosition = this.stickPosition*(parent.lastLength/parent.length);
       }
-      let heightOffset = new THREE.Vector3(0, parent.length*(this.stickPosition-0.5), 0);
+      let heightOffset = new THREE.Vector3(0, parent.length*(this.stickPosition), 0);
       this.positionUpToDate = true;
       this.relativePosition = heightOffset;
     }
@@ -307,12 +325,14 @@ class Part
 
     if (!this.renderUpToDate)
     {
-      let realPosition = getPositionFromBottom(this.relativePosition, this.relativeRotation, this.length);
+      let realPosition = this.relativePosition;//getPositionFromBottom(this.relativePosition, this.relativeRotation, this.length);
       if (this.DOMObject === null)
       {
         if (!this.isRoot)
         {
-          this.DOMObject = document.createElement("a-cylinder");
+          //this.DOMObject = document.createElement("a-cylinder");
+          this.DOMObject = document.createElement("a-entity");
+          //this.DOMObject.setAttribute("material", "shader: flat; color: red;");
         }
         else
         {
@@ -324,8 +344,8 @@ class Part
            z: THREE.Math.radToDeg(this.relativeRotation.z) });
         if (!this.isRoot)
         {
-          this.DOMObject.setAttribute("radius", this.thickness);
-          this.DOMObject.setAttribute("height", this.length);
+          //this.DOMObject.setAttribute("radius", this.thickness);
+          //this.DOMObject.setAttribute("height", this.length);
         }
         if (parent === null)
         {
@@ -337,7 +357,7 @@ class Part
         }
         this.DOMObject.object3D.position.set(realPosition.x, realPosition.y, realPosition.z);
         this.DOMObject.object3D.rotation.set(THREE.Math.radToDeg(this.relativeRotation.x), THREE.Math.radToDeg(this.relativeRotation.y), THREE.Math.radToDeg(this.relativeRotation.z));
-        this.DOMObject.addEventListener('DOMContentLoaded', function () { console.log("loaded!"); renderChildren(); });
+        this.DOMObject.addEventListener('DOMContentLoaded', function () { renderChildren(); });
         this.renderChildren();
       }
       else
@@ -346,12 +366,21 @@ class Part
       //  this.DOMObject.object3D.rotation.set(THREE.Math.radToDeg(this.relativeRotation.x), THREE.Math.radToDeg(this.relativeRotation.y), THREE.Math.radToDeg(this.relativeRotation.z));
         if (!this.isRoot)
         {
-          this.DOMObject.setAttribute("radius", this.thickness);
-          this.DOMObject.setAttribute("height", this.length);
-        }
+        //   this.DOMObject.setAttribute("radius", this.thickness);
+        //   this.DOMObject.setAttribute("height", this.length);
+         }
         this.renderChildren();
       }
       this.renderUpToDate = true;
+
+      if (this.displayDOMObject === null || this.displayDOMObject === undefined)
+      {
+        this.displayDOMObject = document.createElement("a-entity");
+        this.displayDOMObject.setAttribute("gltf-model", `#${this.model}`);
+        this.DOMObject.appendChild(this.displayDOMObject);
+      }
+      this.displayDOMObject.setAttribute("scale", { x: this.thickness, y: this.length, z: this.thickness });
+
     }
     else
     {
@@ -373,6 +402,49 @@ class Part
   {
     this.DOMObject.parentNode.removeChild(this.DOMObject);
   }
+
+  renamePart(oldName, newName)
+  {
+    if (this.name === oldName)
+    {
+      this.name = newName;
+    }
+
+    for (let i = 0; i < this.children.length; i++)
+    {
+      this.children[i].renamePart(oldName, newName);
+    }
+  }
+
+  updateRules(partName, newSet)
+  {
+    if (this.name === partName)
+    {
+      this.rules = newSet;
+    }
+
+    for (let i = 0; i < this.children.length; i++)
+    {
+      this.children[i].updateRules(partName, newSet);
+    }
+  }
+
+  updateSingleRule(ruleName, newRule)
+  {
+    for (let i = 0; i < this.rules.length; i++)
+    {
+      if (this.rules[i].name === ruleName)
+      {
+        this.rules[i] = newRule;
+      }
+    }
+
+    for (let i = 0; i < this.children.length; i++)
+    {
+      this.children[i].updateSingleRule(ruleName, newRule);
+    }
+  }
+
 }
 
 //Class defining an entire plant.
@@ -409,6 +481,21 @@ class Plant
   remove()
   {
     this.rootPart.remove();
+  }
+
+  renamePart(oldName, newName)
+  {
+    this.rootPart.renamePart(oldName, newName);
+  }
+
+  updateRules(partName, newSet)
+  {
+    this.rootPart.updateRules(partName, newSet);
+  }
+
+  updateSingleRule(ruleName, newRule)
+  {
+    this.rootPart.updateSingleRule(ruleName, newRule);
   }
 }
 
@@ -477,6 +564,18 @@ class Garden
       this.plants[i].render();
     }
   }
+
+  updateSingleRule(ruleName, newRule)
+  {
+    for (let i = 0; i < this.plants.length; i++)
+    {
+      this.plants[i].updateSingleRule(ruleName, newRule)
+    }
+    for (let i = 0; i < this.definedParts.length; i++)
+    {
+      this.definedParts[i].updateSingleRule(ruleName, newRule)
+    }
+  }
 }
 
 class SimulationOptions
@@ -507,7 +606,7 @@ rootPart.length = 0;
 rootPart.thickness = 0;
 rootPart.name = "Root";
 let trunkPart = new Part();
-trunkPart.thickness = 0.01;
+trunkPart.thickness = 1;
 trunkPart.length = 2;
 trunkPart.lastLength = 2;
 trunkPart.relativePosition = new THREE.Vector3(0, 0, 0);
@@ -515,7 +614,7 @@ trunkPart.relativeRotation = new THREE.Euler();
 trunkPart.name = "Trunk";
 let branchPart = new Part();
 branchPart.relativePosition = new THREE.Vector3();
-branchPart.relativeRotation = new THREE.Euler(0.5, 0, 0);
+branchPart.relativeRotation = new THREE.Euler(0, 0, 0);
 branchPart.thickness = 0.1;
 branchPart.length = 0.5;
 branchPart.name = "Branch";
@@ -547,7 +646,7 @@ garden.plants.push(garden.plantBlueprints[0].createPlant());
 //garden.plants.push(plant1);
 
 //Add defined rules and parts to the garden
-garden.definedParts.push(rootPart);
+//garden.definedParts.push(rootPart);
 garden.definedParts.push(trunkPart);
 garden.definedParts.push(branchPart);
 

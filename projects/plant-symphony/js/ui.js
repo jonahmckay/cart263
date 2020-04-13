@@ -53,6 +53,18 @@ function getFromListWithName(list, name)
   return null;
 }
 
+function nameExists(name)
+{
+  //Checks to see if a specific name exists as a part, or rule name.
+
+  if (getFromListWithName(garden.definedParts, name) !== null || getFromListWithName(garden.definedRules, name) !== null)
+  {
+    return true;
+  }
+
+  return false;
+}
+
 function populateSelect($select, list, defaultValue)
 {
   //Populates a select with options corrisponding to the name attribute of
@@ -142,7 +154,12 @@ function renameObject(selectName, obj, newName)
 
 function renamePart(part, newName)
 {
-  if (getFromListWithName(garden.definedParts, newName) !== null)
+  for (let i = 0; i < garden.plants.length; i++)
+  {
+    garden.plants[i].renamePart(part.name, newName);
+  }
+
+  if (nameExists(newName))
   {
     //TODO: Make this do something to the UI
     console.log("Attempted to rename a part to an already existing part name")
@@ -154,22 +171,27 @@ function renamePart(part, newName)
 
 function renameRule(rule, newName)
 {
-  if (getFromListWithName(garden.definedRules, newName) !== null)
+  if (nameExists(newName))
   {
     //TODO: Make this do something to the UI
-    console.log("Attempted to rename a rule to an already existing rule name")
+    console.log("Attempted to rename a rule to an already existing name")
     return;
   }
 
   renameObject(".rulesSelect", rule, newName);
 }
 
+function updateSingleRule(ruleName, newRule)
+{
+  garden.updateSingleRule(ruleName, newRule);
+}
+
 function createPart()
 {
+  //Function for creating a part.
   let newPart = new Part();
   garden.definedParts.push(newPart);
 
-  //Function for creating a part.
   selectedPart = garden.definedParts[garden.definedParts.length-1];
   updateSelects();
 }
@@ -177,14 +199,10 @@ function createPart()
 function removePart(partName)
 {
   //Function for removing a part.
-  //TODO: implement
   for (let i = 0; i < garden.definedParts.length; i++)
   {
-    console.log(garden.definedParts[i].name);
-    console.log(partName);
     if (garden.definedParts[i].name === partName)
     {
-      console.log("haha!!");
       garden.definedParts.splice(i, 1);
       break;
     }
@@ -192,6 +210,37 @@ function removePart(partName)
   selectedPart = garden.definedParts[garden.definedParts.length-1];
   updateSelects();
   initializePartsDialog();
+}
+
+function createRule()
+{
+  let newRule = new GrowthRule();
+  garden.definedRules.push(newRule);
+
+  selectedRule = garden.definedRules[garden.definedRules.length-1];
+  updateSelects();
+  initializeRulesDialog();
+}
+
+function removeRule(ruleName)
+{
+  for (let i = 0; i < garden.definedParts.length; i++)
+  {
+    removeRuleFromPartByName(ruleName, garden.definedParts[i]);
+  }
+
+  for (let i = 0; i < garden.definedRules.length; i++)
+  {
+    if (garden.definedRules[i].name === ruleName)
+    {
+      garden.definedRules.splice(i, 1);
+      break;
+    }
+  }
+  selectedRule = garden.definedRules[garden.definedRules.length-1];
+  updateSelects();
+  initializePartsDialog();
+  initializeRulesDialog();
 }
 
 function addRuleToPart(rule, part)
@@ -205,6 +254,18 @@ function addRuleToPart(rule, part)
 
 //  updateSelects();
   initializePartsDialog();
+}
+
+function removeRuleFromPartByName(name, part)
+{
+  for (let i = 0; i < part.rules.length; i++)
+  {
+    if (part.rules[i].name === name)
+    {
+      part.rules.splice(i, 1);
+      break;
+    }
+  }
 }
 
 function removeRuleFromPart(index, part)
@@ -246,6 +307,7 @@ function changeRuleType(ruleName, newType)
     if (newType === "productionRule")
     {
       newRule = new ProductionRule();
+      newRule.basePart = garden.definedParts[0];
     }
     else if (newType === "growthRule")
     {
@@ -354,8 +416,8 @@ function initializePartsDialog()
   $baseThicknessInput.val(selectedPart.thickness);
 
   $isRootBox.on("change", function () { selectedPart.isRoot = $isRootBox.prop("checked"); });
-  $baseLengthInput.on("change", function () { selectedPart.length = $baseLengthInput.val(); });
-  $baseThicknessInput.on("change", function () { selectedPart.thickness = $baseThicknessInput.val(); });
+  $baseLengthInput.on("change", function () { selectedPart.length = parseFloat($baseLengthInput.val()); });
+  $baseThicknessInput.on("change", function () { selectedPart.thickness = parseFloat($baseThicknessInput.val()); });
 
   let $rulesDiv = $("<div id=partsDialogRulesDiv>Rules:</div>");
   $rulesDiv.append("<br>");
@@ -416,7 +478,7 @@ function initializeRulesDialog()
 
   let $rename = $("<input id=ruleDialogRename></input>");
   $rename.val(selectedRule.name);
-  $rename.on("change", function () {renamePart(selectedRule, $rename.val());})
+  $rename.on("change", function () {renameRule(selectedRule, $rename.val());})
 
   $rulesDialog.append($rename);
 
@@ -426,9 +488,20 @@ function initializeRulesDialog()
 
   $rulesDialog.append($ruleType);
 
+  let $addRuleButton = $("<button id='rulesDialogAddRule'>Add Rule</button>");
+  $addRuleButton.on("click", function () { createRule(); });
+
+  $rulesDialog.append($addRuleButton);
+
+  let $removeRuleButton = $("<button id='rulesDialogRemoveRule'>Remove Rule</button>");
+  $removeRuleButton.on("click", function () { removeRule(selectedRule.name); });
+
+  $rulesDialog.append($removeRuleButton);
+
   let $baseChanceInput = $("<input id=ruleDialogBaseChance></input>");
   $baseChanceInput.val(selectedRule.baseChance);
-  $baseChanceInput.on("change", function () { selectedRule.baseChance = $baseChanceInput.val(); });
+  $baseChanceInput.on("change", function () { selectedRule.baseChance = parseFloat($baseChanceInput.val());
+  updateSingleRule(selectedRule.name, selectedRule);});
 
   $rulesDialog.append($baseChanceInput);
 
@@ -436,10 +509,11 @@ function initializeRulesDialog()
   let $ruleOptions = $("<div id='ruleDialogOptions'></div>");
   if (selectedRule.ruleType === "productionRule")
   {
-    $partSelect = createPartsSelect();
+    let $partSelect = createPartsSelect();
     $partSelect.val(selectedRule.basePart.name);
     $partSelect.on("change", function () {
-      selectedRule.basePart = getFromListWithName(garden.definedParts, $partSelect.val());});
+      selectedRule.basePart = getFromListWithName(garden.definedParts, $partSelect.val());
+      updateSingleRule(selectedRule.name, selectedRule);});
 
     $ruleOptions.append($partSelect);
 
@@ -448,13 +522,15 @@ function initializeRulesDialog()
   {
     let $lengthDeltaInput = $("<input id=ruleDialogLengthDelta></input>");
     $lengthDeltaInput.val(selectedRule.lengthDelta);
-    $lengthDeltaInput.on("change", function () { selectedRule.lengthDelta = $lengthDeltaInput.val(); });
+    $lengthDeltaInput.on("change", function () {
+      selectedRule.lengthDelta = parseFloat($lengthDeltaInput.val()); console.log($lengthDeltaInput.val()); updateSingleRule(selectedRule.name, selectedRule);});
 
     $ruleOptions.append($lengthDeltaInput);
 
     let $thicknessDeltaInput = $("<input id='ruleDialogThicknessDelta'></input>");
-    $thicknessDeltaInput.val(selectedRule.lengthDelta);
-    $thicknessDeltaInput.on("change", function () { selectedRule.thicknessDelta = $thicknessDeltaInput.val(); });
+    $thicknessDeltaInput.val(selectedRule.thicknessDelta);
+    $thicknessDeltaInput.on("change", function () {
+      selectedRule.thicknessDelta = parseFloat($thicknessDeltaInput.val()); updateSingleRule(selectedRule.name, selectedRule); });
 
     $ruleOptions.append($thicknessDeltaInput);
   }

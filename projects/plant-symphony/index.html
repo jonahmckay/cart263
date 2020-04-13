@@ -34,8 +34,14 @@
   </head>
 
   <body>
-    
+
     <a-scene vr-mode-ui="enabled: false" background="color: #000000" auto-render>
+      <a-assets>
+        <a-asset-item id="cylinder" src="assets/models/cylinder.gltf"></a-asset-item>
+        <a-asset-item id="organic" src="assets/models/organic.gltf"></a-asset-item>
+        <a-asset-item id="leaf" src="assets/models/leaf.gltf"></a-asset-item>
+      </a-assets>
+
       <a-entity id="camera-pivot" position="0 1.6 0" auto-rotate>
         <a-entity id="rig" position="0 0 4">
           <a-entity id="camera" camera></a-entity>
