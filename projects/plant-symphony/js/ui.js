@@ -50,7 +50,7 @@ function getFromListWithName(list, name)
   return null;
 }
 
-function populateSelect($select, list)
+function populateSelect($select, list, defaultValue)
 {
   //Populates a select with options corrisponding to the name attribute of
   //each element in an array.
@@ -60,6 +60,7 @@ function populateSelect($select, list)
     let $option = $(`<option ${value=list[i].name}>${value=list[i].name}</option>`);
     $select.append($option)
   }
+  $select.val(defaultValue);
   return $select;
 }
 
@@ -77,7 +78,6 @@ function createPartsSelect()
   //Returns a jquery object of a select populated with the garden's defined parts.
   let $select = $("<select class='partsSelect'></select>");
   populateSelect($select, garden.definedParts);
-  //$select.selectmenu();
   return $select;
 }
 
@@ -86,23 +86,117 @@ function updateSelects()
   //Updates part selects and rules selects, making them matching the defined
   //parts and rules of the garden.
   let $partsSelects = $(".partsSelect");
-  $partsSelects.each(function(i, obj) { populateSelect($($partsSelects[i]), garden.definedParts); });
+  $partsSelects.each(function(i, obj) { populateSelect($($partsSelects[i]), garden.definedParts, $partsSelects[i].value); });
   let $rulesSelects = $(".rulesSelect");
-  $partsSelects.each(function(i, obj) { populateSelect($($rulesSelects[i]), garden.definedRules); });
+  $partsSelects.each(function(i, obj) { populateSelect($($rulesSelects[i]), garden.definedRules, $partsSelects[i].value); });
+}
+
+function renameObject(selectName, obj, newName)
+{
+  //Handles all aspects of renaming a defined object (Part or Rule).
+
+  let oldName = obj.name;
+
+  obj.name = newName;
+
+  let $selects = $(selectName);
+
+  for (let i = 0; i < $selects.length; i++)
+  {
+    if ($selects[i].value === oldName)
+    {
+      let $select = $($selects[i]);
+      for (let optionIndex = 0; optionIndex < $select.children().length; optionIndex++)
+      {
+        if ($select.find("option")[optionIndex].value === oldName)
+        {
+          $select.find("option")[optionIndex].value = newName;
+          $select.val(newName);
+        }
+      }
+    }
+  }
+  updateSelects();
+}
+
+function renamePart(part, newName)
+{
+  if (getFromListWithName(garden.definedParts, newName) !== null)
+  {
+    //TODO: Make this do something to the UI
+    console.log("Attempted to rename a part to an already existing part name")
+    return;
+  }
+
+  renameObject(".partsSelect", part, newName);
+}
+
+function renameRule(rule, newName)
+{
+  if (getFromListWithName(garden.definedRules, newName) !== null)
+  {
+    //TODO: Make this do something to the UI
+    console.log("Attempted to rename a rule to an already existing rule name")
+    return;
+  }
+
+  renameObject(".rulesSelect", rule, newName);
 }
 
 function createPart()
 {
+  let newPart = new Part();
+  garden.definedParts.push(newPart);
+
   //Function for creating a part.
-  //TODO: implement
-  setActiveDialogPart(garden.definedParts[garden.definedParts.length-1]);
+  selectedPart = garden.definedParts[garden.definedParts.length-1];
+  updateSelects();
 }
 
 function removePart(partName)
 {
   //Function for removing a part.
   //TODO: implement
-  setActiveDialogPart(garden.definedParts[garden.definedParts.length-1]);
+  for (let i = 0; i < garden.definedParts.length; i++)
+  {
+    console.log(garden.definedParts[i].name);
+    console.log(partName);
+    if (garden.definedParts[i].name === partName)
+    {
+      console.log("haha!!");
+      garden.definedParts.splice(i, 1);
+      break;
+    }
+  }
+  selectedPart = garden.definedParts[garden.definedParts.length-1];
+  updateSelects();
+  initializePartsDialog();
+}
+
+function addRuleToPart(rule, part)
+{
+  if (rule === null)
+  {
+    rule = garden.definedRules[0];
+  }
+
+  part.addRule(rule);
+
+//  updateSelects();
+  initializePartsDialog();
+}
+
+function removeRuleFromPart(index, part)
+{
+  part.removeRuleByIndex(index);
+
+//  updateSelects();
+  initializePartsDialog();
+}
+
+function changeRuleOnPart(index, newRule, part)
+{
+  part.rules[index] = newRule;
 }
 
 function onPartDialogSelectChange($select)
@@ -110,6 +204,7 @@ function onPartDialogSelectChange($select)
   //Function called when the select for choosing the active UI part is
   //changed.
   selectedPart = getFromListWithName(garden.definedParts, $select.val());
+  initializePartsDialog();
 }
 
 function onRuleDialogSelectChange($select)
@@ -142,13 +237,89 @@ function initializePartsDialog()
   {
     if (garden.definedParts.length > 0)
     {
-      setActiveDialogPart(garden.definedParts[0]);
+      selectedPart = garden.definedParts[0];
     }
   }
 
   let $partSelect = createPartsSelect();
+  $partSelect.val(selectedPart.name);
   $partSelect.on("change", function () { onPartDialogSelectChange($partSelect) })
   $partsDialog.append($partSelect);
+
+  let $rename = $("<input id=partDialogRename></input>");
+  $rename.val(selectedPart.name);
+  $rename.on("change", function () {renamePart(selectedPart, $rename.val());})
+  $partsDialog.append($rename);
+
+  let $addPartButton = $("<button id='partDialogAddPart'>Add Part</button>");
+  let $removePartButton = $("<button id='partDialogRemovePart'>Remove Part</button>");
+
+  //TODO: This makes it so that createPart is bound to the part UIbar button for
+  //some reason??? Debug later
+  // $addPartButton.button();
+  // $removePartButton.button();
+
+  $addPartButton.on("click", createPart);
+  $removePartButton.on("click", function () { removePart(selectedPart.name); });
+
+  $partsDialog.append($addPartButton);
+  $partsDialog.append($removePartButton);
+
+  let $partOptions = $("<div id='partDialogOptions'</div>");
+
+  let $isRootBox = $("<input type='checkbox' name='partDialogIsRoot' id='partDialogIsRoot'>");
+  let $baseLengthInput = $("<input id=partDialogBaseLength></input>");
+  let $baseThicknessInput = $("<input id=partDialogBaseThickness></input>");
+
+  if (selectedPart.isRoot) {
+    $isRootBox.prop("checked", true);
+  }
+
+  $baseLengthInput.val(selectedPart.length);
+  $baseThicknessInput.val(selectedPart.thickness);
+
+  $isRootBox.on("change", function () { selectedPart.isRoot = $isRootBox.prop("checked"); });
+  $baseLengthInput.on("change", function () { selectedPart.length = $baseLengthInput.val(); });
+
+  let $rulesDiv = $("<div id=partsDialogRulesDiv>Rules:</div>");
+
+  let $addRuleButton = $("<button id='partsDialogAddRule'>Add Rule</button>");
+
+  $addRuleButton.on("click", function () { addRuleToPart(null, selectedPart) });
+
+  $rulesDiv.append($addRuleButton);
+
+  for (let i = 0; i < selectedPart.rules.length; i++)
+  {
+    let $ruleLine = $("<span class='partsDialogRuleLine'></span>");
+
+    let $ruleSelect = createRulesSelect();
+    $ruleSelect.val(selectedPart.rules[i].name);
+
+    $ruleSelect.on("change", function () {
+      changeRuleOnPart(i, getFromListWithName(garden.definedRules, $ruleSelect.val()), selectedPart);
+    });
+
+    let $removeRuleButton = $("<button class='partsDialogRemoveRule'>Remove Rule</button>");
+
+    $removeRuleButton.on("click", function () { removeRuleFromPart(i, selectedPart) });
+
+    $ruleLine.append($("</br>"));
+    $ruleLine.text(`Rule ${i+1}:`);
+
+    $ruleLine.append($ruleSelect);
+    $ruleLine.append($removeRuleButton);
+
+    $rulesDiv.append($ruleLine);
+  }
+
+  $partOptions.append($isRootBox);
+  $partOptions.append($baseLengthInput);
+  $partOptions.append($baseThicknessInput);
+
+  $partOptions.append($rulesDiv);
+
+  $partsDialog.append($partOptions);
 }
 
 function initializeRulesDialog()
@@ -160,7 +331,7 @@ function initializeRulesDialog()
   {
     if (garden.definedRules.length > 0)
     {
-      setActiveDialogPart(garden.definedRules[0]);
+      selectedRule = garden.definedRules[0];
     }
   }
 
@@ -181,6 +352,10 @@ function initializeDialogs()
 
   togglePartsDialog();
   toggleRulesDialog();
+
+  $plantDialog.parent().toggle();
+  $simulationDialog.parent().toggle();
+  $musicDialog.parent().toggle();
   //TODO: Hide other dialogs
 
 }

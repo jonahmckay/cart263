@@ -127,8 +127,21 @@ class ProductionRule extends Rule
   produce(target)
   {
     //Adds this rule's part to the rule's target.
-    let newPart = clonePart(this.basePart);
-    target.addChild(newPart);
+    let sameTypeCounter = 0;
+    for (let i = 0; i < target.children.length; i++)
+    {
+      if (target.children[i].name == this.basePart.name)
+      {
+        sameTypeCounter++;
+      }
+    }
+
+    if (sameTypeCounter <= this.baseTypeCap || this.baseTypeCap < 0)
+    {
+      let newPart = clonePart(this.basePart);
+      target.addChild(newPart);
+    }
+
   }
 }
 
@@ -220,6 +233,16 @@ class Part
   {
     //Adds a rule to this part.
     this.rules.push(rule);
+  }
+
+  removeChildByIndex(index)
+  {
+    this.children.splice(index, 1);
+  }
+
+  removeRuleByIndex(index)
+  {
+    this.rules.splice(index, 1);
   }
 
   changeLength(delta)
@@ -442,10 +465,14 @@ branchPart.length = 0.5;
 branchPart.name = "Branch";
 
 let newBranchRule = new ProductionRule(branchPart);
+newBranchRule.name = "New Branch";
 let newBranchRuleLowChance = new ProductionRule(branchPart);
+newBranchRuleLowChance.name = "New Branch (LC)";
 newBranchRuleLowChance.baseChance = 0.03;
 let growTrunkRule = new GrowthRule();
+growTrunkRule.name = "Grow Trunk";
 let growBranchRule = new GrowthRule();
+growBranchRule.name = "Grow Branch";
 
 trunkPart.addRule(growTrunkRule);
 trunkPart.addRule(newBranchRule);
@@ -465,6 +492,11 @@ garden.plants.push(plant1);
 garden.definedParts.push(rootPart);
 garden.definedParts.push(trunkPart);
 garden.definedParts.push(branchPart);
+
+garden.definedRules.push(growTrunkRule);
+garden.definedRules.push(newBranchRule);
+garden.definedRules.push(newBranchRuleLowChance);
+garden.definedRules.push(growBranchRule);
 
 //auto-rotate component, rotates the camera around the scene by a set speed.
 //TODO: magic numbers are bad, define rotation speed in a variable?
