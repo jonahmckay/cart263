@@ -39,8 +39,8 @@ function clonePart(part) {
   newPart.thickness = part.thickness;
   newPart.rules = part.rules;
   newPart.relativePosition = new THREE.Vector3();
-  newPart.relativeRotation = new THREE.Euler((Math.random()*Math.PI*2), 0, (Math.random()*Math.PI*2));
-  newPart.stickPosition = Math.random();
+  newPart.stickPosition = part.stickPosition;
+  newPart.relativeRotation = part.relativeRotation;
   newPart.partID = partCount;
   partCount++;
 
@@ -77,6 +77,7 @@ class Rule
   {
     this.baseChance = 0.1;
     this.name = "unnamedRule";
+    this.ruleType = "baseRule";
   }
 
   ruleTick(target)
@@ -112,6 +113,8 @@ class ProductionRule extends Rule
   constructor(part)
   {
     super();
+    this.ruleType = "productionRule";
+
     this.basePart = part;
 
     this.baseChance = 0.1;
@@ -139,6 +142,9 @@ class ProductionRule extends Rule
     if (sameTypeCounter <= this.baseTypeCap || this.baseTypeCap < 0)
     {
       let newPart = clonePart(this.basePart);
+
+      newPart.relativeRotation = new THREE.Euler((Math.random()*Math.PI*2), 0, (Math.random()*Math.PI*2));
+      newPart.stickPosition = Math.random();
       target.addChild(newPart);
     }
 
@@ -154,6 +160,8 @@ class GrowthRule extends Rule
   constructor()
   {
     super();
+    this.ruleType = "growthRule";
+
     this.baseChance = 0.025;
     this.lengthDelta = 0.22;
     this.thicknessDelta = 0.0001;
@@ -369,6 +377,11 @@ class Part
       this.children[i].render(this);
     }
   }
+
+  remove()
+  {
+    this.DOMObject.parentNode.removeChild(this.DOMObject);
+  }
 }
 
 //Class defining an entire plant.
@@ -401,6 +414,27 @@ class Plant
     this.rootPart.grow();
     this.renderUpToDate = false;
   }
+
+  remove()
+  {
+    this.rootPart.remove();
+  }
+}
+
+class PlantBlueprint
+{
+  constructor(basePart)
+  {
+    this.basePart = basePart;
+    this.name = "unnamedPlantBlueprint";
+  }
+
+  createPlant()
+  {
+    let newPlant = new Plant();
+    newPlant.rootPart = clonePart(this.basePart);
+    return newPlant;
+  }
 }
 
 class Garden
@@ -408,6 +442,7 @@ class Garden
   //Garden class, stores information about the plants, parts and rules created.
   constructor()
   {
+    this.plantBlueprints = [];
     this.plants = [];
     this.definedRules = [];
     this.definedParts = [];
@@ -417,6 +452,21 @@ class Garden
   {
     //Function for adding a plant to the garden.
     this.plants.append(plant);
+  }
+
+  clearGarden()
+  {
+    for (let i = 0; i < this.plants.length; i++)
+    {
+      this.plants[i].remove();
+    }
+    this.plants = [];
+  }
+
+  restartFromBlueprint(blueprint)
+  {
+    this.clearGarden();
+    this.plants.push(blueprint.createPlant());
   }
 
   gardenGrowStep()
@@ -449,6 +499,7 @@ rootPart.relativePosition = new THREE.Vector3(0, 0, 0);
 rootPart.relativeRotation = new THREE.Euler();
 rootPart.isRoot = true;
 rootPart.length = 0;
+rootPart.thickness = 0;
 rootPart.name = "Root";
 let trunkPart = new Part();
 trunkPart.thickness = 0.01;
@@ -482,11 +533,13 @@ branchPart.addRule(growBranchRule);
 rootPart.children.push(trunkPart);
 
 //Define plant and add to the garden
-let plant1 = new Plant();
+//let plant1 = new Plant();
 
-plant1.rootPart = rootPart;
+//plant1.rootPart = rootPart;
 
-garden.plants.push(plant1);
+garden.plantBlueprints.push(new PlantBlueprint(trunkPart));
+garden.plants.push(garden.plantBlueprints[0].createPlant());
+//garden.plants.push(plant1);
 
 //Add defined rules and parts to the garden
 garden.definedParts.push(rootPart);

@@ -10,6 +10,7 @@ let $musicDialog = $("<div id='simulationDialog'></div>");
 //Active plant elements in the dialogs
 let selectedPart = null;
 let selectedRule = null;
+let selectedPlantBlueprint = null;
 
 //UI bar
 let $uiBar = $("<div id='UIBar'></div>");
@@ -68,7 +69,7 @@ function createRulesSelect()
 {
   //Returns a jquery object of a select populated with the garden's defined rules.
   let $select = $("<select class='rulesSelect'></select>");
-  populateSelect($select, garden.definedRules);
+  populateSelect($select, garden.definedRules, null);
   //$select.selectmenu();
   return $select;
 }
@@ -77,7 +78,24 @@ function createPartsSelect()
 {
   //Returns a jquery object of a select populated with the garden's defined parts.
   let $select = $("<select class='partsSelect'></select>");
-  populateSelect($select, garden.definedParts);
+  populateSelect($select, garden.definedParts, null);
+  return $select;
+}
+
+function createPlantBlueprintsSelect()
+{
+  //Returns a jquery object of a select populated with the garden's defined plant blueprints.
+  let $select = $("<select class='plantBlueprintsSelect'></select>");
+  populateSelect($select, garden.plantBlueprints, null);
+  return $select;
+}
+
+
+function createRuleTypeSelect()
+{
+  let $select = $("<select class='ruleTypeSelect'></select>");
+  $select.append($(`<option value='productionRule'}>Production Rule</option>`));
+  $select.append($(`<option value='growthRule'}>Growth Rule</option>`));
   return $select;
 }
 
@@ -88,7 +106,9 @@ function updateSelects()
   let $partsSelects = $(".partsSelect");
   $partsSelects.each(function(i, obj) { populateSelect($($partsSelects[i]), garden.definedParts, $partsSelects[i].value); });
   let $rulesSelects = $(".rulesSelect");
-  $partsSelects.each(function(i, obj) { populateSelect($($rulesSelects[i]), garden.definedRules, $partsSelects[i].value); });
+  $rulesSelects.each(function(i, obj) { populateSelect($($rulesSelects[i]), garden.definedRules, $rulesSelects[i].value); });
+  let $plantBlueprintsSelects = $(".plantBlueprintsSelect");
+  $plantBlueprintsSelects.each(function(i, obj) { populateSelect($($plantBlueprintsSelects[i]), garden.plantBlueprints, $plantBlueprintsSelects[i].value); });
 }
 
 function renameObject(selectName, obj, newName)
@@ -199,6 +219,53 @@ function changeRuleOnPart(index, newRule, part)
   part.rules[index] = newRule;
 }
 
+function changeRuleType(ruleName, newType)
+{
+    let ruleIndex = null;
+
+    for (let i = 0; i < garden.definedRules.length; i++)
+    {
+      if (garden.definedRules[i].name === ruleName)
+      {
+          ruleIndex = i;
+          break;
+      }
+    }
+
+    if (ruleIndex === null)
+    {
+      console.error(`Could not find rule "${ruleName}" while trying to change its type!`);
+      return false;
+    }
+
+    let oldRule = garden.definedRules[ruleIndex];
+
+    let newRule = null;
+
+    if (newType === "productionRule")
+    {
+      newRule = new ProductionRule();
+    }
+    else if (newType === "growthRule")
+    {
+      newRule = new GrowthRule();
+    }
+    else
+    {
+      console.error(`${newType} is an invalid rule type for changeRuleType!`);
+      return false;
+    }
+
+    newRule.name = oldRule.name;
+    newRule.baseChance = oldRule.baseChance;
+
+    garden.definedRules[ruleIndex] = newRule;
+
+    selectedRule = garden.definedRules[ruleIndex];
+    updateSelects();
+    initializeRulesDialog();
+}
+
 function onPartDialogSelectChange($select)
 {
   //Function called when the select for choosing the active UI part is
@@ -212,6 +279,7 @@ function onRuleDialogSelectChange($select)
   //Function called when the select for choosing the active UI rule is
   //changed.
   selectedRule = getFromListWithName(garden.definedRules, $select.val());
+  initializeRulesDialog();
 }
 
 function togglePartsDialog()
@@ -226,6 +294,12 @@ function toggleRulesDialog()
   //Toggles the rules dialog.
   initializeRulesDialog();
   $rulesDialog.parent().toggle();
+}
+
+function togglePlantDialog()
+{
+  initializePlantDialog();
+  $plantDialog.parent().toggle();
 }
 
 function initializePartsDialog()
@@ -280,9 +354,10 @@ function initializePartsDialog()
 
   $isRootBox.on("change", function () { selectedPart.isRoot = $isRootBox.prop("checked"); });
   $baseLengthInput.on("change", function () { selectedPart.length = $baseLengthInput.val(); });
+  $baseThicknessInput.on("change", function () { selectedPart.thickness = $baseThicknessInput.val(); });
 
   let $rulesDiv = $("<div id=partsDialogRulesDiv>Rules:</div>");
-
+  $rulesDiv.append("<br>");
   let $addRuleButton = $("<button id='partsDialogAddRule'>Add Rule</button>");
 
   $addRuleButton.on("click", function () { addRuleToPart(null, selectedPart) });
@@ -291,8 +366,7 @@ function initializePartsDialog()
 
   for (let i = 0; i < selectedPart.rules.length; i++)
   {
-    let $ruleLine = $("<span class='partsDialogRuleLine'></span>");
-
+    let $ruleLine = $("<div class='partsDialogRuleLine'></div>");
     let $ruleSelect = createRulesSelect();
     $ruleSelect.val(selectedPart.rules[i].name);
 
@@ -304,7 +378,6 @@ function initializePartsDialog()
 
     $removeRuleButton.on("click", function () { removeRuleFromPart(i, selectedPart) });
 
-    $ruleLine.append($("</br>"));
     $ruleLine.text(`Rule ${i+1}:`);
 
     $ruleLine.append($ruleSelect);
@@ -337,7 +410,73 @@ function initializeRulesDialog()
 
   let $ruleSelect = createRulesSelect();
   $ruleSelect.on("change", function () { onRuleDialogSelectChange($ruleSelect) })
+  $ruleSelect.val(selectedRule.name);
   $rulesDialog.append($ruleSelect);
+
+  let $rename = $("<input id=ruleDialogRename></input>");
+  $rename.val(selectedRule.name);
+  $rename.on("change", function () {renamePart(selectedRule, $rename.val());})
+
+  $rulesDialog.append($rename);
+
+  let $ruleType = createRuleTypeSelect();
+  $ruleType.val(selectedRule.ruleType);
+  $ruleType.on("change", function () { changeRuleType(selectedRule.name, $ruleType.val()); });
+
+  $rulesDialog.append($ruleType);
+
+  let $baseChanceInput = $("<input id=ruleDialogBaseChance></input>");
+  $baseChanceInput.val(selectedRule.baseChance);
+  $baseChanceInput.on("change", function () { selectedRule.baseChance = $baseChanceInput.val(); });
+
+  $rulesDialog.append($baseChanceInput);
+
+  //dependent on rule type
+  $ruleOptions = $("<div id='ruleDialogOptions'></div>");
+  if (selectedRule.ruleType === "productionRule")
+  {
+    $partSelect = createPartsSelect();
+    $partSelect.val(selectedRule.basePart.name);
+    $partSelect.on("change", function () {
+      selectedRule.basePart = getFromListWithName(garden.definedParts, $partSelect.val());});
+
+    $ruleOptions.append($partSelect);
+
+  }
+  else if (selectedRule.ruleType === "growthRule")
+  {
+    let $lengthDeltaInput = $("<input id=ruleDialogLengthDelta></input>");
+    $lengthDeltaInput.val(selectedRule.lengthDelta);
+    $lengthDeltaInput.on("change", function () { selectedRule.lengthDelta = $lengthDeltaInput.val(); });
+
+    $ruleOptions.append($lengthDeltaInput);
+
+    let $thicknessDeltaInput = $("<input id='ruleDialogThicknessDelta'></input>");
+    $thicknessDeltaInput.val(selectedRule.lengthDelta);
+    $thicknessDeltaInput.on("change", function () { selectedRule.thicknessDelta = $thicknessDeltaInput.val(); });
+
+    $ruleOptions.append($thicknessDeltaInput);
+  }
+
+  $rulesDialog.append($ruleOptions);
+}
+
+function initializePlantDialog()
+{
+  selectedPlantBlueprint = garden.plantBlueprints[0];
+
+  $plantDialog.empty();
+
+  $basePartSelect = createPartsSelect();
+  $basePartSelect.val(selectedPlantBlueprint.basePart.name);
+  $basePartSelect.on("change", function () { selectedPlantBlueprint.basePart = getFromListWithName(garden.definedParts, $basePartSelect.val()) });
+
+  $restartButton = $("<button id='plantDialogRestartButton'>Restart</button>");
+  $restartButton.on("click", function () {
+    garden.restartFromBlueprint(selectedPlantBlueprint); });
+
+  $plantDialog.append($basePartSelect);
+  $plantDialog.append($restartButton);
 }
 
 function initializeDialogs()
@@ -352,11 +491,10 @@ function initializeDialogs()
 
   togglePartsDialog();
   toggleRulesDialog();
+  togglePlantDialog();
 
-  $plantDialog.parent().toggle();
   $simulationDialog.parent().toggle();
   $musicDialog.parent().toggle();
-  //TODO: Hide other dialogs
 
 }
 
