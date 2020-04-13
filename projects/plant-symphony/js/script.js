@@ -17,16 +17,6 @@ $(document).ready(setup);
 //TODO: This will break if I ever make a save/reload function.
 let partCount = 0;
 
-//Growth tick variables.
-//TODO: These should not be globals just hanging out, ideally these should be in
-//a Simulation class or something simular.
-
-//Growth simulation tick variables.
-let framesSinceLastGrowth = 0;
-let framesPerGrowth = 10;
-//Whether or not to run growth ticks at all.
-let growthRunning = true;
-
 function clonePart(part) {
   //Clones a part.
   //TODO: Make this actually consider things like rotation instead
@@ -179,6 +169,7 @@ class GrowthRule extends Rule
     //modify length and thickness.
     target.changeLength(this.lengthDelta);
     target.thickness += this.thicknessDelta;
+    target.renderUpToDate = false;
   }
 }
 
@@ -488,6 +479,20 @@ class Garden
   }
 }
 
+class SimulationOptions
+{
+  constructor()
+  {
+    //Growth simulation tick variables.
+    this.framesSinceLastGrowth = 0;
+    this.framesPerGrowth = 10;
+    //Whether or not to run growth ticks at all.
+    this.growthRunning = true;
+  }
+}
+
+let simulation = new SimulationOptions();
+
 //Garden variable, also used in ui.js. Sort of a master class, storing
 //all information about the plants and possibly music when that gets
 //implemented.
@@ -566,16 +571,16 @@ AFRAME.registerComponent("auto-render", {
   tick: function()
   {
     garden.gardenRenderStep();
-    if (framesSinceLastGrowth >= framesPerGrowth)
+    if (simulation.framesSinceLastGrowth >= simulation.framesPerGrowth)
     {
       garden.gardenGrowStep();
-      framesSinceLastGrowth = 0;
+      simulation.framesSinceLastGrowth = 0;
     }
     else
     {
-      if (growthRunning)
+      if (simulation.growthRunning)
       {
-        framesSinceLastGrowth++;
+        simulation.framesSinceLastGrowth++;
       }
     }
   }

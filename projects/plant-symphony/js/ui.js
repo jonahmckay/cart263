@@ -1,3 +1,5 @@
+"use strict";
+
 $(document).ready(setupUI);
 
 //Create dialog divs
@@ -21,8 +23,8 @@ let $rulesButton = $("<button class='barButton' id='rulesButton' onclick='$rules
 let $plantButton = $("<button class='barButton' id='plantButton' onclick='$plantDialog.parent().toggle();'></button>").button();
 let $simulationButton = $("<button class='barButton' id='simulationButton' onclick='$simulationDialog.parent().toggle();'></button>").button();
 let $musicButton = $("<button class='barButton' id='musicButton' onclick='$musicDialog.parent().toggle();'></button>").button();
-let $playButton = $("<button class='barButton' id='playButton' onclick='growthRunning = true;'></button>").button();
-let $pauseButton = $("<button class='barButton' id='pauseButton' onclick='growthRunning = false;'></button>").button();
+let $playButton = $("<button class='barButton' id='playButton' onclick='simulation.growthRunning = true;'></button>").button();
+let $pauseButton = $("<button class='barButton' id='pauseButton' onclick='simulation.growthRunning = false;'></button>").button();
 
 //Add buttons to the UI bar
 $uiBar.append($partsButton);
@@ -58,7 +60,7 @@ function populateSelect($select, list, defaultValue)
   $select.empty();
   for (let i = 0; i < list.length; i++)
   {
-    let $option = $(`<option ${value=list[i].name}>${value=list[i].name}</option>`);
+    let $option = $(`<option value='${list[i].name}'>${list[i].name}</option>`);
     $select.append($option)
   }
   $select.val(defaultValue);
@@ -70,7 +72,6 @@ function createRulesSelect()
   //Returns a jquery object of a select populated with the garden's defined rules.
   let $select = $("<select class='rulesSelect'></select>");
   populateSelect($select, garden.definedRules, null);
-  //$select.selectmenu();
   return $select;
 }
 
@@ -432,7 +433,7 @@ function initializeRulesDialog()
   $rulesDialog.append($baseChanceInput);
 
   //dependent on rule type
-  $ruleOptions = $("<div id='ruleDialogOptions'></div>");
+  let $ruleOptions = $("<div id='ruleDialogOptions'></div>");
   if (selectedRule.ruleType === "productionRule")
   {
     $partSelect = createPartsSelect();
@@ -467,11 +468,11 @@ function initializePlantDialog()
 
   $plantDialog.empty();
 
-  $basePartSelect = createPartsSelect();
+  let $basePartSelect = createPartsSelect();
   $basePartSelect.val(selectedPlantBlueprint.basePart.name);
   $basePartSelect.on("change", function () { selectedPlantBlueprint.basePart = getFromListWithName(garden.definedParts, $basePartSelect.val()) });
 
-  $restartButton = $("<button id='plantDialogRestartButton'>Restart</button>");
+  let $restartButton = $("<button id='plantDialogRestartButton'>Restart</button>");
   $restartButton.on("click", function () {
     garden.restartFromBlueprint(selectedPlantBlueprint); });
 
