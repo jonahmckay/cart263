@@ -15,6 +15,7 @@ let $rulesDialog = $("<div id='rulesDialog'></div>");
 let $plantDialog = $("<div id='plantDialog'></div>");
 let $simulationDialog = $("<div id='simulationDialog'></div>");
 let $musicDialog = $("<div id='simulationDialog'></div>");
+let $infoDialog = $("<div id='infoDialog'></div>");
 
 //Active plant elements in the dialogs
 let selectedPart = null;
@@ -32,6 +33,7 @@ let $simulationButton = $("<button class='barButton' id='simulationButton' oncli
 let $musicButton = $("<button class='barButton' id='musicButton' onclick='toggleDialog($musicDialog);'></button>").button();
 let $playButton = $("<button class='barButton' id='playButton' onclick='simulation.growthRunning = true;'></button>").button();
 let $pauseButton = $("<button class='barButton' id='pauseButton' onclick='simulation.growthRunning = false;'></button>").button();
+let $infoButton = $("<button class='barButton' id='infoButton' onclick='toggleDialog($infoDialog)'></button>").button();
 
 //Add buttons to the UI bar
 $uiBar.append($partsButton);
@@ -41,6 +43,7 @@ $uiBar.append($simulationButton);
 $uiBar.append($musicButton);
 $uiBar.append($playButton);
 $uiBar.append($pauseButton);
+$uiBar.append($infoButton);
 
 function getFromListWithName(list, name)
 {
@@ -660,6 +663,27 @@ function initializeMusicDialog()
   $musicDialog.append("<p>To be implemented</p>");
 }
 
+function initializeInfoDialog()
+{
+  $infoDialog.empty();
+  $infoDialog.append("<h1>Plant Symphony</h1>");
+  $infoDialog.append("<p>Plant Symphony is a virtual toy, where you can play with procedural growth of plant-like structures, and then parse those structures as sound.</p>");
+  $infoDialog.append("<p>This short manual will explain the basics of the different components of how the plant generation system works as well as how to use the program's menus, although it is not a full documentation.</p>");
+  $infoDialog.append("<h2>Parts</h2>");
+  $infoDialog.append("<p>Plants are made up of different parts. The example plant uses 2 defined parts, the Trunk and the Branch. You can make and edit parts by clicking the Part button in the UI. Parts simply exist in the world and do nothing else unless they have defined Rules, which are run every plant growth tick. To define your own rules, you have to do that in the Rules menu.");
+  $infoDialog.append("<h2>Rules</h2>");
+  $infoDialog.append("<p>Rules are random chances for a given part to do something, defined by the Rule type. The two current rule types are Growth Rules, which modify the plant's length or thickness, and Production Rules, which add a child part to the plant. It's worth noting that if you want a plant to grow a specific part, some production rule for that part must be defined.");
+  $infoDialog.append("<h2>Plant</h2>");
+  $infoDialog.append("<p>The plant menu allows you to reset the plant's growth, along with defining its root part. All plants start with at least one part, which all of the other parts of the plant grow off of.</p>");
+  $infoDialog.append("<h2>Simulation</h2>");
+  $infoDialog.append("<p>Allows you to define certain 'global' settings.");
+  $infoDialog.append("<h2>Music</h2>");
+  $infoDialog.append("<p>Allows you to play music generated from your plant's growth.</p>");
+  $infoDialog.append("<h2>Info</h2>");
+  $infoDialog.append("<p>A potentially helpful guide.</p>");
+  $infoDialog.css({height: "500px", overflow: "auto"});
+}
+
 function initializeDialogs()
 {
   //Initializes, then hides each of the dialogs.
@@ -681,12 +705,18 @@ function initializeDialogs()
   $musicDialog.dialog({
     title: "Music",
     open: function(e, ui) { initializeMusicDialog(); } });
+  $infoDialog.dialog({
+    title: "Information",
+    width: "600px",
+    open: function(e, ui) { initializeInfoDialog(); } });
+
 
   toggleDialog($partsDialog);
   toggleDialog($rulesDialog);
   toggleDialog($plantDialog);
   toggleDialog($simulationDialog);
   toggleDialog($musicDialog);
+  toggleDialog($infoDialog);
 
 }
 
