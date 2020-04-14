@@ -531,6 +531,7 @@ class Garden
     this.definedRules = [];
     this.definedParts = [];
     this.definedModels = ["cylinder", "leaf", "organic", "bell"];
+
   }
 
   addPlant(plant)

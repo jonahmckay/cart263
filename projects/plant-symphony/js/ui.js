@@ -26,14 +26,14 @@ let selectedPlantBlueprint = null;
 let $uiBar = $("<div id='UIBar'></div>");
 
 //Define buttons
-let $partsButton = $("<button class='barButton' id='partsButton' onclick='toggleDialog($partsDialog);'></button>").button();
-let $rulesButton = $("<button class='barButton' id='rulesButton' onclick='toggleDialog($rulesDialog);'></button>").button();
-let $plantButton = $("<button class='barButton' id='plantButton' onclick='toggleDialog($plantDialog);'></button>").button();
-let $simulationButton = $("<button class='barButton' id='simulationButton' onclick='toggleDialog($simulationDialog);'></button>").button();
-let $musicButton = $("<button class='barButton' id='musicButton' onclick='toggleDialog($musicDialog);'></button>").button();
-let $playButton = $("<button class='barButton' id='playButton' onclick='simulation.growthRunning = true;'></button>").button();
-let $pauseButton = $("<button class='barButton' id='pauseButton' onclick='simulation.growthRunning = false;'></button>").button();
-let $infoButton = $("<button class='barButton' id='infoButton' onclick='toggleDialog($infoDialog)'></button>").button();
+let $partsButton = $("<button class='barButton' title='Parts' id='partsButton' onclick='toggleDialog($partsDialog);'></button>")
+let $rulesButton = $("<button class='barButton' title='Rules' id='rulesButton' onclick='toggleDialog($rulesDialog);'></button>")
+let $plantButton = $("<button class='barButton' title='Plant' id='plantButton' onclick='toggleDialog($plantDialog);'></button>")
+let $simulationButton = $("<button class='barButton' title='Simulation Settings' id='simulationButton' onclick='toggleDialog($simulationDialog);'></button>")
+let $musicButton = $("<button class='barButton' title='Music' id='musicButton' onclick='toggleDialog($musicDialog);'></button>")
+let $playButton = $("<button class='barButton' title='Start Growth' id='playButton' onclick='simulation.growthRunning = true;'></button>")
+let $pauseButton = $("<button class='barButton' title='Stop Growth' id='pauseButton' onclick='simulation.growthRunning = false;'></button>")
+let $infoButton = $("<button class='barButton' title='Info' id='infoButton' onclick='toggleDialog($infoDialog)'></button>")
 
 //Add buttons to the UI bar
 $uiBar.append($partsButton);
@@ -224,6 +224,8 @@ function createPart()
 {
   //Function for creating a part.
   let newPart = new Part();
+  //TODO: awful solution to avoid name collisions, replace with something else
+  newPart.name = `unnamedPart${garden.definedParts.length}`;
   garden.definedParts.push(newPart);
 
   selectedPart = garden.definedParts[garden.definedParts.length-1];
@@ -250,9 +252,12 @@ function createRule()
 {
   //Creates a new default rule.
   let newRule = new GrowthRule();
+  //TODO: awful solution to avoid name collisions, replace with something else
+  newRule.name = `unnamedRule${garden.definedRules.length}`;
   garden.definedRules.push(newRule);
 
   selectedRule = garden.definedRules[garden.definedRules.length-1];
+
   updateSelects();
   initializeRulesDialog();
 }
@@ -720,7 +725,24 @@ function initializeDialogs()
 
 }
 
+function firstTimeCheck()
+{
+  if (localStorage.getItem("firstTime") !== "true")
+  {
+    openFirstTimeDialog();
+    localStorage.setItem('firstTime', 'true');
+  }
+}
+
+function openFirstTimeDialog()
+{
+  toggleDialog($infoDialog);
+}
+
 function setupUI() {
   $("body").append($uiBar);
   initializeDialogs();
+
+  firstTimeCheck();
+  $($uiBar).tooltip();
 }

@@ -7,6 +7,10 @@ body {
   width: 100px;
   height: 100px;
   margin: 10px;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  outline: none;
 }
 
 #UIBar
@@ -60,6 +64,11 @@ body {
   background-size: cover;
 }
 
+#infoButton
+{
+  background-image: url('../assets/images/infoicon.png');
+  background-size: cover;
+}
 #partsDialogRulesDiv
 {
   margin-top: 20px;
