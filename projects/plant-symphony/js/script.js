@@ -108,6 +108,9 @@ class ProductionRule extends Rule
 
     this.basePart = part;
 
+    this.stickPositionLowerBound = 0;
+    this.stickPositionUpperBound = 1;
+
     this.baseChance = 0.1;
     this.baseTypeCap = 100;
 
@@ -148,7 +151,7 @@ class ProductionRule extends Rule
       let zRotation = this.baseZRotation+(Math.random()*this.zRotationVariability)-(this.zRotationVariability/2);
 
       newPart.relativeRotation = new THREE.Euler(xRotation * (Math.PI/180), yRotation * (Math.PI/180), zRotation * (Math.PI/180));
-      newPart.stickPosition = Math.random();
+      newPart.stickPosition = this.stickPositionLowerBound + (Math.random()*(this.stickPositionUpperBound-this.stickPositionLowerBound));
       target.addChild(newPart);
     }
 
@@ -336,7 +339,6 @@ class Part
       let realPosition = this.relativePosition;//getPositionFromBottom(this.relativePosition, this.relativeRotation, this.length);
       if (this.DOMObject === null)
       {
-
          this.DOMObject = document.createElement("a-entity");
 
          this.DOMObject.setAttribute('position', { x: realPosition.x, y: realPosition.y, z: realPosition.z });
@@ -376,6 +378,7 @@ class Part
           this.DOMObject.appendChild(this.displayDOMObject);
 
       }
+      this.displayDOMObject.setAttribute("scale", { x: this.thickness, y: this.length, z: this.thickness });
       this.renderUpToDate = true;
     }
     this.renderChildren();

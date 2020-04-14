@@ -473,8 +473,8 @@ function initializePartsDialog()
 
   let $partOptions = $("<div id='partDialogOptions'</div>");
 
-  let $baseLengthInput = $("<input id=partDialogBaseLength></input>");
-  let $baseThicknessInput = $("<input id=partDialogBaseThickness></input>");
+  let $baseLengthInput = $("<input class='shortInput' id=partDialogBaseLength></input>");
+  let $baseThicknessInput = $("<input class='shortInput' id=partDialogBaseThickness></input>");
 
   let $lengthBlock = $("<span>Base Length: </span></br>");
   let $thicknessBlock = $("<span>Base Thickness: </span></br>");
@@ -602,20 +602,108 @@ function initializeRulesDialog()
     $partSelectLine.append($partSelect);
     $rulesDialog.append($partSelectLine);
 
+    let $XRotationLine = $("<div id='rulesDialogXRotationLine'></div>");
+    $XRotationLine.append("Base X Rotation: ");
+    let $XRotationBaseInput = $("<input class='shortInput' id=rulesDialogXRotationBaseInput></input>");
+    $XRotationBaseInput.val(selectedRule.baseXRotation);
+    $XRotationBaseInput.on("change", function () {
+      selectedRule.baseXRotation = parseFloat($XRotationBaseInput.val()); console.log("?"); updateSingleRule(selectedRule.name, selectedRule);});
+
+    $XRotationLine.append($XRotationBaseInput);
+
+    $XRotationLine.append("</br>");
+
+    $XRotationLine.append("X Rotation Deviation Range: ");
+
+    let $XRotationDeviationInput = $("<input class='shortInput' id=rulesDialogXRotationDeviationInput></input>");
+    $XRotationDeviationInput.val(selectedRule.xRotationVariability);
+    $XRotationDeviationInput.on("change", function () {
+      selectedRule.xRotationVariability = parseFloat($XRotationDeviationInput.val()); updateSingleRule(selectedRule.name, selectedRule);});
+    $XRotationLine.append($XRotationDeviationInput);
+
+    $rulesDialog.append($XRotationLine);
+
+
+    let $YRotationLine = $("<div id='rulesDialogYRotationLine'></div>");
+    $YRotationLine.append("Base Y Rotation: ");
+    let $YRotationBaseInput = $("<input class='shortInput' id=rulesDialogYRotationBaseInput></input>");
+    $YRotationBaseInput.val(selectedRule.baseYRotation);
+    $YRotationBaseInput.on("change", function () {
+      selectedRule.baseYRotation = parseFloat($YRotationBaseInput.val()); updateSingleRule(selectedRule.name, selectedRule);});
+
+    $YRotationLine.append($YRotationBaseInput);
+
+    $YRotationLine.append("</br>");
+
+    $YRotationLine.append("Y Rotation Deviation Range: ");
+
+    let $YRotationDeviationInput = $("<input class='shortInput' id=rulesDialogYRotationDeviationInput></input>");
+    $YRotationDeviationInput.val(selectedRule.yRotationVariability);
+    $YRotationDeviationInput.on("change", function () {
+      selectedRule.yRotationVariability = parseFloat($YRotationDeviationInput.val()); updateSingleRule(selectedRule.name, selectedRule);});
+    $YRotationLine.append($YRotationDeviationInput);
+
+    $rulesDialog.append($YRotationLine);
+
+
+    let $ZRotationLine = $("<div id='rulesDialogZRotationLine'></div>");
+    $ZRotationLine.append("Base Z Rotation: ");
+    let $ZRotationBaseInput = $("<input class='shortInput' id=rulesDialogZRotationBaseInput></input>");
+    $ZRotationBaseInput.val(selectedRule.baseZRotation);
+    $ZRotationBaseInput.on("change", function () {
+      selectedRule.baseZRotation = parseFloat($zRotationBaseInput.val()); updateSingleRule(selectedRule.name, selectedRule);});
+
+    $ZRotationLine.append($ZRotationBaseInput);
+
+    $ZRotationLine.append("</br>");
+
+    $ZRotationLine.append("Z Rotation Deviation Range: ");
+
+    let $ZRotationDeviationInput = $("<input class='shortInput' id=rulesDialogZRotationDeviationInput></input>");
+    $ZRotationDeviationInput.val(selectedRule.zRotationVariability);
+    $ZRotationDeviationInput.on("change", function () {
+      selectedRule.zRotationVariability = parseFloat($ZRotationDeviationInput.val()); updateSingleRule(selectedRule.name, selectedRule);});
+    $ZRotationLine.append($ZRotationDeviationInput);
+
+    $rulesDialog.append($ZRotationLine);
+
+    $rulesDialog.append("<p></p>");
+
+    let $stickPositionLine = $("<div id='rulesDialogStickPositionLine'></div>");
+
+    $stickPositionLine.append("Stick Position Bounds: ")
+    let $lowerStickPositionInput = $("<input class='shortInput' id=rulesDialogLowerStickPositionInput></input>");
+    $lowerStickPositionInput.val(selectedRule.stickPositionLowerBound);
+    $lowerStickPositionInput.on("change", function () {
+      selectedRule.stickPositionLowerBound = parseFloat($lowerStickPositionInput.val()); updateSingleRule(selectedRule.name, selectedRule);});
+
+    $stickPositionLine.append($lowerStickPositionInput);
+    $stickPositionLine.append("-");
+
+    let $upperStickPositionInput = $("<input class='shortInput' id=rulesDialogUpperStickPositionInput></input>");
+    $upperStickPositionInput.val(selectedRule.stickPositionUpperBound);
+    $upperStickPositionInput.on("change", function () {
+      selectedRule.stickPositionUpperBound = parseFloat($upperStickPositionInput.val()); updateSingleRule(selectedRule.name, selectedRule);});
+    $stickPositionLine.append($upperStickPositionInput);
+
+    $rulesDialog.append($stickPositionLine);
+
   }
+
+
   else if (selectedRule.ruleType === "growthRule")
   {
     let $lengthLine = $("<p>Length Delta: </p>");
-    let $lengthDeltaInput = $("<input id=rulesDialogLengthDelta></input>");
+    let $lengthDeltaInput = $("<input class='shortInput' id=rulesDialogLengthDelta></input>");
     $lengthDeltaInput.val(selectedRule.lengthDelta);
     $lengthDeltaInput.on("change", function () {
-      selectedRule.lengthDelta = parseFloat($lengthDeltaInput.val()); console.log($lengthDeltaInput.val()); updateSingleRule(selectedRule.name, selectedRule);});
+      selectedRule.lengthDelta = parseFloat($lengthDeltaInput.val()); updateSingleRule(selectedRule.name, selectedRule);});
 
     $lengthLine.append($lengthDeltaInput);
     $ruleOptions.append($lengthLine);
 
     let $thicknessLine = $("<p>Thickness Delta: </p>");
-    let $thicknessDeltaInput = $("<input id='rulesDialogThicknessDelta'></input>");
+    let $thicknessDeltaInput = $("<input class='shortInput' id='rulesDialogThicknessDelta'></input>");
     $thicknessDeltaInput.val(selectedRule.thicknessDelta);
     $thicknessDeltaInput.on("change", function () {
       selectedRule.thicknessDelta = parseFloat($thicknessDeltaInput.val()); updateSingleRule(selectedRule.name, selectedRule); });

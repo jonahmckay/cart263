@@ -22,6 +22,11 @@ body {
   top: 0;
 }
 
+.shortInput
+{
+  width: 75px;
+}
+
 #partsButton
 {
   background-image: url('../assets/images/partsicon.png');
