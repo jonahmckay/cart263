@@ -2,6 +2,13 @@
 
 $(document).ready(setupUI);
 
+/********************************************************************
+
+UI.js script: handles the user interface and its functions that tie to the
+garden object in script.js.
+
+*********************************************************************/
+
 //Create dialog divs
 let $partsDialog = $("<div id='partsDialog'></div>");
 let $rulesDialog = $("<div id='rulesDialog'></div>");
@@ -18,11 +25,11 @@ let selectedPlantBlueprint = null;
 let $uiBar = $("<div id='UIBar'></div>");
 
 //Define buttons
-let $partsButton = $("<button class='barButton' id='partsButton' onclick='togglePartsDialog();'></button>").button();
-let $rulesButton = $("<button class='barButton' id='rulesButton' onclick='$rulesDialog.parent().toggle();'></button>").button();
-let $plantButton = $("<button class='barButton' id='plantButton' onclick='$plantDialog.parent().toggle();'></button>").button();
-let $simulationButton = $("<button class='barButton' id='simulationButton' onclick='$simulationDialog.parent().toggle();'></button>").button();
-let $musicButton = $("<button class='barButton' id='musicButton' onclick='$musicDialog.parent().toggle();'></button>").button();
+let $partsButton = $("<button class='barButton' id='partsButton' onclick='toggleDialog($partsDialog);'></button>").button();
+let $rulesButton = $("<button class='barButton' id='rulesButton' onclick='toggleDialog($rulesDialog);'></button>").button();
+let $plantButton = $("<button class='barButton' id='plantButton' onclick='toggleDialog($plantDialog);'></button>").button();
+let $simulationButton = $("<button class='barButton' id='simulationButton' onclick='toggleDialog($simulationDialog);'></button>").button();
+let $musicButton = $("<button class='barButton' id='musicButton' onclick='toggleDialog($musicDialog);'></button>").button();
 let $playButton = $("<button class='barButton' id='playButton' onclick='simulation.growthRunning = true;'></button>").button();
 let $pauseButton = $("<button class='barButton' id='pauseButton' onclick='simulation.growthRunning = false;'></button>").button();
 
@@ -103,9 +110,22 @@ function createPlantBlueprintsSelect()
   return $select;
 }
 
+function createModelsSelect()
+{
+  //Returns a jquery object of a select populated with the garden's defined models.
+  let $select = $("<select class='modelsSelect'></select>");
+  for (let i = 0; i < garden.definedModels.length; i++)
+  {
+    let $option = $(`<option value='${garden.definedModels[i]}'>${garden.definedModels[i]}</option>`);
+    $select.append($option)
+  }
+  return $select;
+}
+
 
 function createRuleTypeSelect()
 {
+  //Creates a select of the different rule types.
   let $select = $("<select class='ruleTypeSelect'></select>");
   $select.append($(`<option value='productionRule'}>Production Rule</option>`));
   $select.append($(`<option value='growthRule'}>Growth Rule</option>`));
@@ -154,19 +174,26 @@ function renameObject(selectName, obj, newName)
 
 function renamePart(part, newName)
 {
+  //Renames a part.
+
+  //Check for name collision, and if there is one, just don't run.
+  if (nameExists(newName))
+  {
+    //TODO: Make this do something to the UI
+    console.log("Attempted to rename a part to an already existing part name")
+    return false;
+  }
+
+
   for (let i = 0; i < garden.plants.length; i++)
   {
     garden.plants[i].renamePart(part.name, newName);
   }
 
-  if (nameExists(newName))
-  {
-    //TODO: Make this do something to the UI
-    console.log("Attempted to rename a part to an already existing part name")
-    return;
-  }
 
   renameObject(".partsSelect", part, newName);
+
+  return true;
 }
 
 function renameRule(rule, newName)
@@ -175,14 +202,18 @@ function renameRule(rule, newName)
   {
     //TODO: Make this do something to the UI
     console.log("Attempted to rename a rule to an already existing name")
-    return;
+    return false;
   }
 
   renameObject(".rulesSelect", rule, newName);
+
+  return true;
 }
 
 function updateSingleRule(ruleName, newRule)
 {
+  //When a rule is changed, run this to update it in the garden (updating all
+  //parts that use this rule)
   garden.updateSingleRule(ruleName, newRule);
 }
 
@@ -214,6 +245,7 @@ function removePart(partName)
 
 function createRule()
 {
+  //Creates a new default rule.
   let newRule = new GrowthRule();
   garden.definedRules.push(newRule);
 
@@ -224,6 +256,9 @@ function createRule()
 
 function removeRule(ruleName)
 {
+  //Removes a rule, and removes the reference to it from all defined parts that
+  //have it in the garden.
+
   for (let i = 0; i < garden.definedParts.length; i++)
   {
     removeRuleFromPartByName(ruleName, garden.definedParts[i]);
@@ -245,6 +280,7 @@ function removeRule(ruleName)
 
 function addRuleToPart(rule, part)
 {
+  //Adds a rule to a part.
   if (rule === null)
   {
     rule = garden.definedRules[0];
@@ -252,12 +288,13 @@ function addRuleToPart(rule, part)
 
   part.addRule(rule);
 
-//  updateSelects();
   initializePartsDialog();
 }
 
 function removeRuleFromPartByName(name, part)
 {
+  //Given a rule's name, remove it from a part.
+
   for (let i = 0; i < part.rules.length; i++)
   {
     if (part.rules[i].name === name)
@@ -270,19 +307,23 @@ function removeRuleFromPartByName(name, part)
 
 function removeRuleFromPart(index, part)
 {
+  //Given a rule's index in a part's rules array, remove it.
   part.removeRuleByIndex(index);
 
-//  updateSelects();
   initializePartsDialog();
 }
 
 function changeRuleOnPart(index, newRule, part)
 {
+  //Changes a rule on a part to a different rule.
   part.rules[index] = newRule;
 }
 
 function changeRuleType(ruleName, newType)
 {
+  //Changes a rule's type (i.e from GrowthRule to ProductionRule.)
+  //Note: This will need to be changed whenever a new rule type is added.
+  //TODO: Some better solution?
     let ruleIndex = null;
 
     for (let i = 0; i < garden.definedRules.length; i++)
@@ -345,31 +386,36 @@ function onRuleDialogSelectChange($select)
   initializeRulesDialog();
 }
 
-function togglePartsDialog()
+//
+// Dialog toggle function
+//
+
+function toggleDialog($dialog)
 {
-  //Toggles the parts dialog.
-  initializePartsDialog();
-  $partsDialog.parent().toggle();
+  //Toggles by closing or opening a dialog given.
+  if ($dialog.dialog("isOpen"))
+  {
+    $dialog.dialog("close");
+  }
+  else
+  {
+    $dialog.dialog("open");
+  }
 }
 
-function toggleRulesDialog()
-{
-  //Toggles the rules dialog.
-  initializeRulesDialog();
-  $rulesDialog.parent().toggle();
-}
-
-function togglePlantDialog()
-{
-  initializePlantDialog();
-  $plantDialog.parent().toggle();
-}
+//
+// "Initialize" (really update/redo) functions.
+// TODO: Divide these into initialization functions
+// and update functions so that the entire div/UI for a box
+// doesn't need to be redone every single time?
+//
 
 function initializePartsDialog()
 {
   //Initializes the parts dialog.
 
   $partsDialog.empty();
+
   if (selectedPart === null)
   {
     if (garden.definedParts.length > 0)
@@ -378,21 +424,18 @@ function initializePartsDialog()
     }
   }
 
+  $partsDialog.append("<p>Active part:</p>");
+
   let $partSelect = createPartsSelect();
   $partSelect.val(selectedPart.name);
   $partSelect.on("change", function () { onPartDialogSelectChange($partSelect) })
   $partsDialog.append($partSelect);
 
-  let $rename = $("<input id=partDialogRename></input>");
-  $rename.val(selectedPart.name);
-  $rename.on("change", function () {renamePart(selectedPart, $rename.val());})
-  $partsDialog.append($rename);
-
   let $addPartButton = $("<button id='partDialogAddPart'>Add Part</button>");
   let $removePartButton = $("<button id='partDialogRemovePart'>Remove Part</button>");
 
   //TODO: This makes it so that createPart is bound to the part UIbar button for
-  //some reason??? Debug later
+  //some reason??? Debug at some point
   // $addPartButton.button();
   // $removePartButton.button();
 
@@ -402,30 +445,50 @@ function initializePartsDialog()
   $partsDialog.append($addPartButton);
   $partsDialog.append($removePartButton);
 
+  $partsDialog.append("<p>Rename part:</p>");
+
+  let $rename = $("<input id=partDialogRename></input>");
+  $rename.val(selectedPart.name);
+  $rename.on("change", function () {renamePart(selectedPart, $rename.val());})
+  $partsDialog.append($rename);
+
+  let $modelBlock = $("<p></p>");
+  $modelBlock.text("Part Model: ")
+
+  let $modelSelect = createModelsSelect();
+  $modelSelect.val(selectedPart.model.modelSource);
+  $modelSelect.on("change", function () { selectedPart.model.modelSource = $modelSelect.val(); garden.forceRender(); });
+
+  $modelBlock.append($modelSelect);
+
+  $partsDialog.append($modelBlock);
+
   let $partOptions = $("<div id='partDialogOptions'</div>");
 
-  let $isRootBox = $("<input type='checkbox' name='partDialogIsRoot' id='partDialogIsRoot'>");
   let $baseLengthInput = $("<input id=partDialogBaseLength></input>");
   let $baseThicknessInput = $("<input id=partDialogBaseThickness></input>");
 
-  if (selectedPart.isRoot) {
-    $isRootBox.prop("checked", true);
-  }
+  let $lengthBlock = $("<span>Base Length: </span></br>");
+  let $thicknessBlock = $("<span>Base Thickness: </span></br>");
 
   $baseLengthInput.val(selectedPart.length);
   $baseThicknessInput.val(selectedPart.thickness);
 
-  $isRootBox.on("change", function () { selectedPart.isRoot = $isRootBox.prop("checked"); });
   $baseLengthInput.on("change", function () { selectedPart.length = parseFloat($baseLengthInput.val()); });
   $baseThicknessInput.on("change", function () { selectedPart.thickness = parseFloat($baseThicknessInput.val()); });
 
-  let $rulesDiv = $("<div id=partsDialogRulesDiv>Rules:</div>");
-  $rulesDiv.append("<br>");
-  let $addRuleButton = $("<button id='partsDialogAddRule'>Add Rule</button>");
+  $lengthBlock.append($baseLengthInput);
+  $thicknessBlock.append($baseThicknessInput);
 
-  $addRuleButton.on("click", function () { addRuleToPart(null, selectedPart) });
+  $partOptions.append($lengthBlock);
+  $partOptions.append($thicknessBlock);
 
-  $rulesDiv.append($addRuleButton);
+  let $rulesDiv = $("<div id=partsDialogRulesDiv></div>");
+
+  let $rulesHeader = $("<h4>Rules:</h4>");
+
+  $rulesDiv.append($rulesHeader);
+  //$rulesDiv.append("</br>");
 
   for (let i = 0; i < selectedPart.rules.length; i++)
   {
@@ -449,9 +512,11 @@ function initializePartsDialog()
     $rulesDiv.append($ruleLine);
   }
 
-  $partOptions.append($isRootBox);
-  $partOptions.append($baseLengthInput);
-  $partOptions.append($baseThicknessInput);
+  let $addRuleButton = $("<button id='partsDialogAddRule'>Add Rule</button>");
+
+  $addRuleButton.on("click", function () { addRuleToPart(null, selectedPart) });
+
+  $rulesDiv.append($addRuleButton);
 
   $partOptions.append($rulesDiv);
 
@@ -471,22 +536,12 @@ function initializeRulesDialog()
     }
   }
 
+  $rulesDialog.append("<p>Active rule:</p>")
+
   let $ruleSelect = createRulesSelect();
   $ruleSelect.on("change", function () { onRuleDialogSelectChange($ruleSelect) })
   $ruleSelect.val(selectedRule.name);
   $rulesDialog.append($ruleSelect);
-
-  let $rename = $("<input id=ruleDialogRename></input>");
-  $rename.val(selectedRule.name);
-  $rename.on("change", function () {renameRule(selectedRule, $rename.val());})
-
-  $rulesDialog.append($rename);
-
-  let $ruleType = createRuleTypeSelect();
-  $ruleType.val(selectedRule.ruleType);
-  $ruleType.on("change", function () { changeRuleType(selectedRule.name, $ruleType.val()); });
-
-  $rulesDialog.append($ruleType);
 
   let $addRuleButton = $("<button id='rulesDialogAddRule'>Add Rule</button>");
   $addRuleButton.on("click", function () { createRule(); });
@@ -498,41 +553,67 @@ function initializeRulesDialog()
 
   $rulesDialog.append($removeRuleButton);
 
-  let $baseChanceInput = $("<input id=ruleDialogBaseChance></input>");
+  $rulesDialog.append("<p>Rename Rule:</p>");
+
+  let $rename = $("<input id=rulesDialogRename></input>");
+  $rename.val(selectedRule.name);
+  $rename.on("change", function () {renameRule(selectedRule, $rename.val());})
+
+  $rulesDialog.append($rename);
+
+  let $baseChanceLine = $("<p>Base Chance: </p>");
+
+  let $baseChanceInput = $("<input id=rulesDialogBaseChance></input>");
   $baseChanceInput.val(selectedRule.baseChance);
   $baseChanceInput.on("change", function () { selectedRule.baseChance = parseFloat($baseChanceInput.val());
   updateSingleRule(selectedRule.name, selectedRule);});
 
-  $rulesDialog.append($baseChanceInput);
+  $baseChanceLine.append($baseChanceInput);
+  $rulesDialog.append($baseChanceLine);
+
+  $rulesDialog.append("<p>Rule Type:</p>");
+
+  let $ruleType = createRuleTypeSelect();
+  $ruleType.val(selectedRule.ruleType);
+  $ruleType.on("change", function () { changeRuleType(selectedRule.name, $ruleType.val()); });
+
+  $rulesDialog.append($ruleType);
 
   //dependent on rule type
-  let $ruleOptions = $("<div id='ruleDialogOptions'></div>");
+  let $ruleOptions = $("<div id='rulesDialogOptions'></div>");
   if (selectedRule.ruleType === "productionRule")
   {
+    let $partSelectLine = $("<p>Child part: </p>");
+
     let $partSelect = createPartsSelect();
     $partSelect.val(selectedRule.basePart.name);
     $partSelect.on("change", function () {
       selectedRule.basePart = getFromListWithName(garden.definedParts, $partSelect.val());
       updateSingleRule(selectedRule.name, selectedRule);});
 
-    $ruleOptions.append($partSelect);
+    $partSelectLine.append($partSelect);
+    $rulesDialog.append($partSelectLine);
 
   }
   else if (selectedRule.ruleType === "growthRule")
   {
-    let $lengthDeltaInput = $("<input id=ruleDialogLengthDelta></input>");
+    let $lengthLine = $("<p>Length Delta: </p>");
+    let $lengthDeltaInput = $("<input id=rulesDialogLengthDelta></input>");
     $lengthDeltaInput.val(selectedRule.lengthDelta);
     $lengthDeltaInput.on("change", function () {
       selectedRule.lengthDelta = parseFloat($lengthDeltaInput.val()); console.log($lengthDeltaInput.val()); updateSingleRule(selectedRule.name, selectedRule);});
 
-    $ruleOptions.append($lengthDeltaInput);
+    $lengthLine.append($lengthDeltaInput);
+    $ruleOptions.append($lengthLine);
 
-    let $thicknessDeltaInput = $("<input id='ruleDialogThicknessDelta'></input>");
+    let $thicknessLine = $("<p>Thickness Delta: </p>");
+    let $thicknessDeltaInput = $("<input id='rulesDialogThicknessDelta'></input>");
     $thicknessDeltaInput.val(selectedRule.thicknessDelta);
     $thicknessDeltaInput.on("change", function () {
       selectedRule.thicknessDelta = parseFloat($thicknessDeltaInput.val()); updateSingleRule(selectedRule.name, selectedRule); });
 
-    $ruleOptions.append($thicknessDeltaInput);
+    $thicknessLine.append($thicknessDeltaInput);
+    $ruleOptions.append($thicknessLine);
   }
 
   $rulesDialog.append($ruleOptions);
@@ -543,35 +624,69 @@ function initializePlantDialog()
   selectedPlantBlueprint = garden.plantBlueprints[0];
 
   $plantDialog.empty();
+  $plantDialog.append("<h2>Reset Plant</h2>")
 
+  $plantDialog.append("Select root part: ");
   let $basePartSelect = createPartsSelect();
   $basePartSelect.val(selectedPlantBlueprint.basePart.name);
   $basePartSelect.on("change", function () { selectedPlantBlueprint.basePart = getFromListWithName(garden.definedParts, $basePartSelect.val()) });
+  $plantDialog.append($basePartSelect);
 
-  let $restartButton = $("<button id='plantDialogRestartButton'>Restart</button>");
+  $plantDialog.append("<p></p>");
+
+  let $restartButton = $("<button id='plantDialogRestartButton'>Reset</button>");
   $restartButton.on("click", function () {
     garden.restartFromBlueprint(selectedPlantBlueprint); });
 
-  $plantDialog.append($basePartSelect);
   $plantDialog.append($restartButton);
+}
+
+function initializeSimulationDialog()
+{
+  $simulationDialog.empty();
+
+  $simulationDialog.append("<p>A-Frame ticks per growth tick:</p>");
+
+  let $framesPerGrowth = $("<input id='simulationDialogFramesPerGrowthInput'></input>");
+  $framesPerGrowth.val(simulation.framesPerGrowth);
+  $framesPerGrowth.on("change", function () { simulation.framesPerGrowth = parseInt($framesPerGrowth.val());});
+
+  $simulationDialog.append($framesPerGrowth);
+}
+
+function initializeMusicDialog()
+{
+  $musicDialog.empty();
+  $musicDialog.append("<p>To be implemented</p>");
 }
 
 function initializeDialogs()
 {
   //Initializes, then hides each of the dialogs.
 
-  $partsDialog.dialog();
-  $rulesDialog.dialog();
-  $plantDialog.dialog();
-  $simulationDialog.dialog();
-  $musicDialog.dialog();
+  $partsDialog.dialog({
+    title: "Parts",
+    width: "400px",
+    open: function(e, ui) { initializePartsDialog(); }});
+  $rulesDialog.dialog({
+    title: "Rules",
+    width: "400px",
+    open: function(e, ui) { initializeRulesDialog(); } });
+  $plantDialog.dialog({
+    title: "Plant",
+    open: function(e, ui) { initializePlantDialog(); } });
+  $simulationDialog.dialog({
+    title: "Simulation Settings",
+    open: function(e, ui) { initializeSimulationDialog(); } });
+  $musicDialog.dialog({
+    title: "Music",
+    open: function(e, ui) { initializeMusicDialog(); } });
 
-  togglePartsDialog();
-  toggleRulesDialog();
-  togglePlantDialog();
-
-  $simulationDialog.parent().toggle();
-  $musicDialog.parent().toggle();
+  toggleDialog($partsDialog);
+  toggleDialog($rulesDialog);
+  toggleDialog($plantDialog);
+  toggleDialog($simulationDialog);
+  toggleDialog($musicDialog);
 
 }
 

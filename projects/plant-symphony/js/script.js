@@ -11,8 +11,6 @@ plant to create music.
 
 *********************************************************************/
 
-$(document).ready(setup);
-
 //Amount of parts created. Used by partID.
 //TODO: This will break if I ever make a save/reload function.
 let partCount = 0;
@@ -32,6 +30,7 @@ function clonePart(part) {
   newPart.stickPosition = part.stickPosition;
   newPart.relativeRotation = part.relativeRotation;
   newPart.partID = partCount;
+  newPart.model = part.model;
   partCount++;
 
   newPart.children = [];
@@ -67,6 +66,8 @@ class Rule
   {
     this.baseChance = 0.1;
     this.name = "unnamedRule";
+
+    //
     this.ruleType = "baseRule";
   }
 
@@ -166,7 +167,10 @@ class GrowthRule extends Rule
     this.ruleType = "growthRule";
 
     this.baseChance = 0.025;
+
+    //When the rule procs, changes the length of the target by this amount
     this.lengthDelta = 0.22;
+    //When the rule procs, changes the thickness of the target by this amount
     this.thicknessDelta = 0.001;
   }
 
@@ -221,19 +225,23 @@ class Part
     partCount++;
 
     //name is a human readable and given name to each part type.
+    //TODO: It's also used by the code in a lot of cases (especially in the ui)
+    //to determine the type of part this is. Ideally this wouldn't be a string
+    //as then it wouldn't change and each part type would have its own ID.
     this.name = "unnamedPart";
 
     //The AFrame object representing this part in the DOM.
     this.DOMObject = null;
     //Child that represents the displayed model;
     this.DisplayDOMObject = null;
+    this.displayedModel = null;
 
     //Used for determining whether these things need to be recalculated.
     this.renderUpToDate = false;
     this.positionUpToDate = false;
 
     //Used for determining the display model of the part.
-    this.model = "organic";
+    this.model = new ModelReference("organic");
 
     //Whether or not this part is its owner plant's root, or if it's a "prototype"
     //part, whether its intended to be used as a root.
@@ -328,25 +336,14 @@ class Part
       let realPosition = this.relativePosition;//getPositionFromBottom(this.relativePosition, this.relativeRotation, this.length);
       if (this.DOMObject === null)
       {
-        if (!this.isRoot)
-        {
-          //this.DOMObject = document.createElement("a-cylinder");
-          this.DOMObject = document.createElement("a-entity");
-          //this.DOMObject.setAttribute("material", "shader: flat; color: red;");
-        }
-        else
-        {
-          this.DOMObject = document.createElement("a-entity");
-        }
+
+         this.DOMObject = document.createElement("a-entity");
+
          this.DOMObject.setAttribute('position', { x: realPosition.x, y: realPosition.y, z: realPosition.z });
          this.DOMObject.setAttribute('rotation', { x: THREE.Math.radToDeg(this.relativeRotation.x),
            y: THREE.Math.radToDeg(this.relativeRotation.y),
            z: THREE.Math.radToDeg(this.relativeRotation.z) });
-        if (!this.isRoot)
-        {
-          //this.DOMObject.setAttribute("radius", this.thickness);
-          //this.DOMObject.setAttribute("height", this.length);
-        }
+
         if (parent === null)
         {
           document.getElementsByTagName("a-scene")[0].appendChild(this.DOMObject);
@@ -358,34 +355,30 @@ class Part
         this.DOMObject.object3D.position.set(realPosition.x, realPosition.y, realPosition.z);
         this.DOMObject.object3D.rotation.set(THREE.Math.radToDeg(this.relativeRotation.x), THREE.Math.radToDeg(this.relativeRotation.y), THREE.Math.radToDeg(this.relativeRotation.z));
         this.DOMObject.addEventListener('DOMContentLoaded', function () { renderChildren(); });
-        this.renderChildren();
       }
       else
       {
         this.DOMObject.object3D.position.set(realPosition.x, realPosition.y, realPosition.z);
       //  this.DOMObject.object3D.rotation.set(THREE.Math.radToDeg(this.relativeRotation.x), THREE.Math.radToDeg(this.relativeRotation.y), THREE.Math.radToDeg(this.relativeRotation.z));
-        if (!this.isRoot)
-        {
-        //   this.DOMObject.setAttribute("radius", this.thickness);
-        //   this.DOMObject.setAttribute("height", this.length);
-         }
-        this.renderChildren();
+      }
+
+      if (this.displayedModel != this.model.modelSource)
+      {
+          if (!(this.displayDOMObject === null || this.displayDOMObject === undefined))
+          {
+              this.DOMObject.removeChild(this.displayDOMObject);
+          }
+
+          this.displayDOMObject = document.createElement("a-entity");
+          this.displayDOMObject.setAttribute("gltf-model", `#${this.model.modelSource}`);
+          this.displayedModel = this.model.modelSource;
+          this.displayDOMObject.setAttribute("scale", { x: this.thickness, y: this.length, z: this.thickness });
+          this.DOMObject.appendChild(this.displayDOMObject);
+
       }
       this.renderUpToDate = true;
-
-      if (this.displayDOMObject === null || this.displayDOMObject === undefined)
-      {
-        this.displayDOMObject = document.createElement("a-entity");
-        this.displayDOMObject.setAttribute("gltf-model", `#${this.model}`);
-        this.DOMObject.appendChild(this.displayDOMObject);
-      }
-      this.displayDOMObject.setAttribute("scale", { x: this.thickness, y: this.length, z: this.thickness });
-
     }
-    else
-    {
-      this.renderChildren();
-    }
+    this.renderChildren();
 
   }
 
@@ -445,6 +438,15 @@ class Part
     }
   }
 
+  recursiveForceRender()
+  {
+    //Forces this part, and all of its children to render next render step.
+    for (let i = 0; i < this.children.length; i++)
+    {
+      this.renderUpToDate = false;
+      this.children[i].recursiveForceRender();
+    }
+  }
 }
 
 //Class defining an entire plant.
@@ -501,6 +503,8 @@ class Plant
 
 class PlantBlueprint
 {
+  //"Blueprint" or factory class for making new plants from a designated
+  //base part.
   constructor(basePart)
   {
     this.basePart = basePart;
@@ -509,6 +513,8 @@ class PlantBlueprint
 
   createPlant()
   {
+    //Returns a new plant object with this blueprint's root part as the plant's
+    //root part.
     let newPlant = new Plant();
     newPlant.rootPart = clonePart(this.basePart);
     return newPlant;
@@ -524,6 +530,7 @@ class Garden
     this.plants = [];
     this.definedRules = [];
     this.definedParts = [];
+    this.definedModels = ["cylinder", "leaf", "organic", "bell"];
   }
 
   addPlant(plant)
@@ -576,10 +583,21 @@ class Garden
       this.definedParts[i].updateSingleRule(ruleName, newRule)
     }
   }
+
+  forceRender()
+  {
+    //Force all parts of all plants to rerender.
+    for (let i = 0; i < this.plants.length; i++)
+    {
+      this.plants[i].renderUpToDate = false;
+      this.plants[i].rootPart.recursiveForceRender();
+    }
+  }
 }
 
 class SimulationOptions
 {
+  //Encapsulates simulation tick variables in a class.
   constructor()
   {
     //Growth simulation tick variables.
@@ -587,6 +605,18 @@ class SimulationOptions
     this.framesPerGrowth = 10;
     //Whether or not to run growth ticks at all.
     this.growthRunning = true;
+  }
+}
+
+class ModelReference
+{
+  //Exists to make the model used by parts to be passed by reference instead of
+  //by value, meaning that all parts of the same type should (in theory) share
+  //the same modelSource.
+  //TODO: Come on, there _has_ to be a better way to do this.
+  constructor(modelName)
+  {
+    this.modelSource = modelName;
   }
 }
 
@@ -606,7 +636,7 @@ rootPart.length = 0;
 rootPart.thickness = 0;
 rootPart.name = "Root";
 let trunkPart = new Part();
-trunkPart.thickness = 1;
+trunkPart.thickness = 0.3;
 trunkPart.length = 2;
 trunkPart.lastLength = 2;
 trunkPart.relativePosition = new THREE.Vector3(0, 0, 0);
@@ -655,6 +685,8 @@ garden.definedRules.push(newBranchRule);
 garden.definedRules.push(newBranchRuleLowChance);
 garden.definedRules.push(growBranchRule);
 
+//Define A-FRAME components.
+
 //auto-rotate component, rotates the camera around the scene by a set speed.
 //TODO: magic numbers are bad, define rotation speed in a variable?
 AFRAME.registerComponent("auto-rotate", {
@@ -685,6 +717,3 @@ AFRAME.registerComponent("auto-render", {
   }
 
 })
-
-function setup() {
-}

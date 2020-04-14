@@ -59,3 +59,28 @@ body {
   background-image: url('../assets/images/pauseicon.png');
   background-size: cover;
 }
+
+#partsDialogRulesDiv
+{
+  margin-top: 20px;
+}
+
+.partsDialogRuleLine
+{
+  margin-top: 10px;
+}
+
+#partsDialogAddRule
+{
+  margin-top: 10px;
+}
+
+#rulesDialogOptions
+{
+  margin-top: 20px;
+}
+
+#plantDialogRestartButton
+{
+  margin-left: 20px;
+}
