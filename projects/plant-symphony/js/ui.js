@@ -482,8 +482,8 @@ function initializePartsDialog()
   $baseLengthInput.val(selectedPart.length);
   $baseThicknessInput.val(selectedPart.thickness);
 
-  $baseLengthInput.on("change", function () { selectedPart.length = parseFloat($baseLengthInput.val()); });
-  $baseThicknessInput.on("change", function () { selectedPart.thickness = parseFloat($baseThicknessInput.val()); });
+  $baseLengthInput.on("change", function () { selectedPart.length = parseFloat($("#partDialogBaseLength").val());});
+  $baseThicknessInput.on("change", function () { selectedPart.thickness = parseFloat($("#partDialogBaseThickness").val()); });
 
   $lengthBlock.append($baseLengthInput);
   $thicknessBlock.append($baseThicknessInput);
