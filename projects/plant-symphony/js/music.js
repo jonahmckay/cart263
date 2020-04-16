@@ -34,6 +34,13 @@ class SoundUnit
       source: this.type,
       options: this.options
     });
+
+    var delay = new Pizzicato.Effects.Delay({
+    feedback: 0.3,
+    time: 0.2,
+    mix: 0.3
+    });
+    this.sound.addEffect(delay);
   }
 
   lengthCheck(currentTime)
@@ -61,10 +68,6 @@ class SoundUnit
     //Stops this sound.
 
     this.sound.stop();
-    //be responsible and free the sound from memory
-    this.sound.disconnect();
-
-    this.sound = null;
     this.playing = false;
     this.timeStarted = null;
   }
@@ -74,6 +77,15 @@ class SoundUnit
     //Returns a copy of this sound.
     let newSound = new SoundUnit(this.type, this.length, this.options);
     return newSound;
+  }
+
+  destroy()
+  {
+    //be responsible and free the sound from memory
+    console.log("sound cleaned!");
+    this.sound.disconnect();
+
+    this.sound = null;
   }
 }
 
@@ -120,7 +132,24 @@ class MusicScore
   {
     //Sorts the timeline and sounds to be in chronological order, which is _required_
     //for the Song class to function.
-    //TODO: Implement this
+    let soundCompare = function (a, b)
+    {
+      return a[0]-b[0];
+    }
+
+    for (let i = 0; i < this.sounds.length; i++)
+    {
+      this.sounds[i] = [this.timeline[i], this.sounds[i]];
+    }
+
+    this.sounds.sort(soundCompare);
+
+    for (let i = 0; i < this.sounds.length; i++)
+    {
+      this.sounds[i] = this.sounds[i][1];
+    }
+
+    this.timeline.sort(function (a, b) { return a-b; });
   }
 }
 
@@ -209,9 +238,10 @@ class Song
     }
 
     //Check if sound is complete
-    if (this.lastSoundPlayed >= this.activeScore.timeline.length && this.activeSounds.length === 0)
+    if (this.lastSoundPlayed >= this.activeScore.timeline.length-1 && this.activeSounds.length === 0)
     {
-      this.stop();
+      setTimeout(function () { this.stop() }.bind(this), 2000);
+
       return false;
     }
     return true;
@@ -221,19 +251,26 @@ class Song
   {
     //Play the Score stored by this Song.
     this.activeScore = this.storedScore.getCopy();
+    this.activeScore.sort();
+
     this.timeStarted = Date.now();
     this.lastSoundPlayed = -1;
-    //TODO: implement
+
+    console.log(this.activeScore.timeline);
   }
 
   stop()
   {
     //Stop the song.
-    for (let i = 0; i < this.activeScore.sounds.length; i++)
+    if (this.activeScore != null)
     {
-      if (this.activeScore.sounds[i].playing)
+      for (let i = 0; i < this.activeScore.sounds.length; i++)
       {
-        this.activeScore.sounds[i].stop();
+        if (this.activeScore.sounds[i].playing)
+        {
+          this.activeScore.sounds[i].stop();
+        }
+        this.activeScore.sounds[i].destroy();
       }
     }
 
@@ -268,6 +305,13 @@ class MusicPlayer
     this.songs.splice(index, 1);
   }
 
+  checkInterval(result)
+  {
+    if (!result)
+    {
+      setTimeout(function () { this.stop() }.bind(this), 2000);
+    }
+  }
   play(index)
   {
     //Plays the song stored at this.songs index "index".
@@ -277,14 +321,14 @@ class MusicPlayer
     //because it messes with what "this" is. bind() solves this.
     //https://stackoverflow.com/a/43014276
     //https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function/bind
-    this.updateInterval = setInterval(function () {this.songs[index].songTick() }.bind(this), 100);
+    this.updateInterval = setInterval(function () {this.checkInterval(this.songs[index].songTick()); }.bind(this), 100);
     this.songPlaying = index;
   }
 
   stop()
   {
     //Stop the currently playing song.
-    this.songs[index].stop();
+    this.songs[this.songPlaying].stop();
     clearInterval(this.updateInterval);
   }
 }
@@ -389,8 +433,11 @@ class MusicFactory
     return ongoingList;
   }
 
-  partSegmentSounds(part, totalLength, timeScalar)
+  getChildrenWeights(part)
   {
+    //Function for quantifying the relative "importance" of each of a part's
+    //children.
+
     let directChildren = this.getAllChildrenToLevel(part, 1);
     let childrenWeight = [];
 
@@ -404,14 +451,20 @@ class MusicFactory
 
     for (let i = 0; i < childrenWeight.length; i++)
     {
-      weightSum += childrenWeight.length;
+      weightSum += childrenWeight[i];
     }
 
     for (let i = 0; i < childrenWeight.length; i++)
     {
-      childrenWeight[i] = (childrenWeight[i]*childrenWeight.length)/weightSum;
+      childrenWeight[i] = (childrenWeight[i])/weightSum;
     }
 
+    return childrenWeight;
+  }
+
+  partSegmentSounds(part, totalLength, timeScalar, ongoingScore, totalDepth, currentDepth)
+  {
+    let childrenWeight = this.getChildrenWeights(part);
     //Weighing the children is done, now let's assign them lengths
 
     let soundLengths = [];
@@ -420,34 +473,83 @@ class MusicFactory
     {
       soundLengths.push(totalLength*childrenWeight[i]);
     }
-    console.log(soundLengths);
 
     let soundTimes = [];
     let soundTimeTotal = 0;
+
     for (let i = 0; i < childrenWeight.length; i++)
     {
       soundTimes.push(soundTimeTotal);
       soundTimeTotal += soundLengths[i];
     }
-    console.log(soundTimes);
 
     let sounds = [];
-    let score = new MusicScore();
+
+    if (ongoingScore === undefined)
+    {
+      ongoingScore = new MusicScore();
+    }
 
     for (let i = 0; i < soundTimes.length; i++)
     {
-      let newSound = new SoundUnit("wave", soundLengths[i]*1.5, {
-        frequency: 220+(Math.random()*1000)
+      let newSound = new SoundUnit("wave", soundLengths[i]/2, {
+        frequency: 523+(part.children[i].relativeRotation.y % Math.PI*2)*73.85,
+        volume: (1-(currentDepth/totalDepth))-0.5
       });
+      newSound.attack = 1.5;
+      newSound.release = 1.5;
+
+      var stereoPanner = new Pizzicato.Effects.StereoPanner({
+        pan: (part.stickPosition*2)-1
+      });
+
+      newSound.sound.addEffect(stereoPanner);
 
       sounds.push(sounds);
 
-      score.addSound(newSound, soundTimes[i]+timeScalar);
+      ongoingScore.addSound(newSound, soundTimes[i]+timeScalar);
     }
 
-    console.log(score.timeline);
-    console.log(score.sounds.length);
-    return score;
+    return ongoingScore;
+  }
+
+  getAllSegmentSounds(part, totalLength, timeScalar, ongoingScore, plantData, currentDepth)
+  {
+    if (ongoingScore === undefined)
+    {
+      ongoingScore = new MusicScore();
+    }
+
+    let childrenWeight = this.getChildrenWeights(part);
+    //Weighing the children is done, now let's assign them lengths
+
+    let soundLengths = [];
+
+    for (let i = 0; i < childrenWeight.length; i++)
+    {
+      soundLengths.push(totalLength*childrenWeight[i]);
+    }
+
+    let soundTimes = [];
+    let soundTimeTotal = 0;
+
+    for (let i = 0; i < childrenWeight.length; i++)
+    {
+      soundTimes.push(soundTimeTotal+timeScalar);
+      soundTimeTotal += soundLengths[i];
+    }
+
+    if (part.children.length > 0)
+    {
+      this.partSegmentSounds(part, totalLength, timeScalar, ongoingScore, plantData.deepestChild, currentDepth);
+
+      for (let i = 0; i < part.children.length; i++)
+      {
+        this.getAllSegmentSounds(part.children[i], soundLengths[i], soundTimes[i], ongoingScore, plantData, currentDepth+1);
+      }
+    }
+
+    return ongoingScore;
   }
 
   makeSongFromPlant(plant, garden, callback)
@@ -465,7 +567,8 @@ class MusicFactory
     //PHASE 2: The creation.
     //Big phase!
 
-    let newScore = this.partSegmentSounds(plant.rootPart, 5000, 0);
+    //let newScore = this.partSegmentSounds(plant.rootPart, 5000, 0);
+    let newScore = this.getAllSegmentSounds(plant.rootPart, plantData.partCount*400, 0, new MusicScore(), plantData, 0)
     song.setScore(newScore);
 
     return song;

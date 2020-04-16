@@ -764,6 +764,11 @@ function initializeMusicDialog()
   $playSongButton.on("click", function () { musicPlayer.play(musicPlayer.songs.length-1); });
 
   $musicDialog.append($playSongButton);
+
+  let $stopSongButton = $("<button id='musicDialogStopSongButton'>Stop Song</button>'");
+  $stopSongButton.on("click", function () { musicPlayer.stop(musicPlayer.songPlaying); });
+
+  $musicDialog.append($stopSongButton);
 }
 
 function initializeInfoDialog()
