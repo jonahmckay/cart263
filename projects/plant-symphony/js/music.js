@@ -22,7 +22,12 @@ class SoundUnit
     //Whether the sound is currently playing.
     this.playing = false;
 
-    this.initialize();
+    this.effects = [];
+  }
+
+  addEffect(effect)
+  {
+    this.effects.push(effect);
   }
 
   initialize()
@@ -40,7 +45,13 @@ class SoundUnit
     time: 0.2,
     mix: 0.3
     });
+
     this.sound.addEffect(delay);
+
+    for (let i = 0; i < this.effects.length; i++)
+    {
+      this.sound.addEffect(this.effects[i]);
+    }
   }
 
   lengthCheck(currentTime)
@@ -58,6 +69,7 @@ class SoundUnit
     //Plays this sound. Note that the sound itself does not check to see if it
     //should stop based on its length, rather this is done by the Song class
     //as it's being played.
+    this.initialize();
     this.sound.play();
     this.timeStarted = Date.now();
     this.playing = true;
@@ -83,9 +95,13 @@ class SoundUnit
   {
     //be responsible and free the sound from memory
     console.log("sound cleaned!");
-    this.sound.disconnect();
 
-    this.sound = null;
+    if (this.sound != undefined)
+    {
+      this.sound.disconnect();
+    }
+
+    this.sound = undefined;
   }
 }
 
@@ -314,6 +330,10 @@ class MusicPlayer
   }
   play(index)
   {
+    if (this.songPlaying != null)
+    {
+      stop();
+    }
     //Plays the song stored at this.songs index "index".
     this.songs[index].play();
 
@@ -328,8 +348,12 @@ class MusicPlayer
   stop()
   {
     //Stop the currently playing song.
-    this.songs[this.songPlaying].stop();
-    clearInterval(this.updateInterval);
+    if (this.songPlaying != null)
+    {
+      this.songs[this.songPlaying].stop();
+      clearInterval(this.updateInterval);
+      this.songPlaying = null;
+    }
   }
 }
 
@@ -503,7 +527,7 @@ class MusicFactory
         pan: (part.stickPosition*2)-1
       });
 
-      newSound.sound.addEffect(stereoPanner);
+      newSound.addEffect(stereoPanner);
 
       sounds.push(sounds);
 
