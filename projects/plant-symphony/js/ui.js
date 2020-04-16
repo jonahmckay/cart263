@@ -651,7 +651,7 @@ function initializeRulesDialog()
     let $ZRotationBaseInput = $("<input class='shortInput' id=rulesDialogZRotationBaseInput></input>");
     $ZRotationBaseInput.val(selectedRule.baseZRotation);
     $ZRotationBaseInput.on("change", function () {
-      selectedRule.baseZRotation = parseFloat($zRotationBaseInput.val()); updateSingleRule(selectedRule.name, selectedRule);});
+      selectedRule.baseZRotation = parseFloat($ZRotationBaseInput.val()); updateSingleRule(selectedRule.name, selectedRule);});
 
     $ZRotationLine.append($ZRotationBaseInput);
 
@@ -753,7 +753,17 @@ function initializeSimulationDialog()
 function initializeMusicDialog()
 {
   $musicDialog.empty();
-  $musicDialog.append("<p>To be implemented</p>");
+  let $makeSongButton = $("<button id='musicDialogMakeSongButton'>Make Song</button>'");
+  $makeSongButton.on("click", function () {
+    musicPlayer.addSong(musicFactory.makeSongFromPlant(garden.plants[0], garden));
+  });
+
+  $musicDialog.append($makeSongButton);
+
+  let $playSongButton = $("<button id='musicDialogPlaySongButton'>Play Song</button>'");
+  $playSongButton.on("click", function () { musicPlayer.play(musicPlayer.songs.length-1); });
+
+  $musicDialog.append($playSongButton);
 }
 
 function initializeInfoDialog()

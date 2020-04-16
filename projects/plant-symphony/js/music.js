@@ -2,14 +2,24 @@
 
 class SoundUnit
 {
+  //An abstraction of a sound. Exists primarily because I don't want to fully
+  //commit to using Pizzicato and would like some abstraction in my system.
+  //Can be played and stopped.
   constructor(type, length, options)
   {
+    //Type corresponds to "source" in the Pizzicato.Sound constructor.
     this.type = type;
+
+    //Length is how long the sound will be played, in ms.
     this.length = length;
+
     //used for Pizzicato sound objects
     this.options = options;
 
+    //The time the sound started, in ms.
     this.timeStarted = null;
+
+    //Whether the sound is currently playing.
     this.playing = false;
 
     this.initialize();
@@ -17,14 +27,18 @@ class SoundUnit
 
   initialize()
   {
+    //Creates the Pizzicato sound element. Potentially would make more sense to
+    //create this in .play() instead, although I feel as though it would be safer
+    //here? Depends on how memory usage/time delay works out
     this.sound = new Pizzicato.Sound({
-      source: "wave",
+      source: this.type,
       options: this.options
     });
   }
 
   lengthCheck(currentTime)
   {
+    //Checks to see whether the sound has played for at least its length.
     if ((currentTime-this.length) < this.timeStarted)
     {
       return false;
@@ -34,6 +48,9 @@ class SoundUnit
 
   play()
   {
+    //Plays this sound. Note that the sound itself does not check to see if it
+    //should stop based on its length, rather this is done by the Song class
+    //as it's being played.
     this.sound.play();
     this.timeStarted = Date.now();
     this.playing = true;
@@ -41,15 +58,20 @@ class SoundUnit
 
   stop()
   {
+    //Stops this sound.
+
     this.sound.stop();
     //be responsible and free the sound from memory
     this.sound.disconnect();
+
     this.sound = null;
     this.playing = false;
+    this.timeStarted = null;
   }
 
   getCopy()
   {
+    //Returns a copy of this sound.
     let newSound = new SoundUnit(this.type, this.length, this.options);
     return newSound;
   }
@@ -57,6 +79,11 @@ class SoundUnit
 
 class MusicScore
 {
+  //Music score class. Stores sounds, and when they are played in 2 arrays. This
+  //is to improve performance while playing a song (how needed this is is debatable,
+  //however the optimization seems potentially worth it? Another layer of abstraction
+  //also seems reasonable to me)
+
   constructor()
   {
     this.sounds = [];
@@ -65,12 +92,16 @@ class MusicScore
 
   addSound(sound, time)
   {
+    //Adds a sound to the score. "sound" ought to be a member of the SoundUnit
+    //class, and "time" is when it's played in the score in milliseconds.
     this.sounds.push(sound);
     this.timeline.push(time);
   }
 
   getCopy()
   {
+    //Returns a copy of this score.
+
     let newScore = new MusicScore();
 
     for (let i = 0; i < this.sounds.length; i++)
@@ -84,35 +115,59 @@ class MusicScore
 
     return newScore;
   }
+
+  sort()
+  {
+    //Sorts the timeline and sounds to be in chronological order, which is _required_
+    //for the Song class to function.
+    //TODO: Implement this
+  }
 }
 
 class Song
 {
+  //Song class. Handles playing through a score, which stores sounds and a timeline
+  //for when those sounds are played.
+
   constructor()
   {
+    //Score objects.
     this.storedScore = null;
     this.activeScore = null;
 
+    //Sounds currently being played.
     this.activeSounds = [];
-    this.lastSoundPlayed = -1;
-    this.timeStarted = null;
 
-    this.updateInterval = null;
+    //Which sound is being played? Must start at -1 for the song playing algorithm
+    //to work properly.
+    this.lastSoundPlayed = -1;
+
+    //Time the song started.
+    this.timeStarted = null;
   }
 
   setScore(score)
   {
+    //Sets the current score of the song.
     this.storedScore = score;
   }
 
   playSound(sound)
   {
+    //Used for playing a song in the activeScore. Use of this function outside
+    //of that context WILL BREAK EVERYTHING. Would be nice if JavaScript had things
+    //like private data encapsulation, but for now I'll just put in this clear warning:
+    //DON'T CALL THIS FUNCTION OUTSIDE OF songTick()!
     this.activeSounds.push(sound);
     sound.play();
   }
 
   songTick()
   {
+    //Function called by an interval called by a SongPlayer class.
+    //setInterval() has some weird interactions with "this", but that's handled
+    //by a bind() in the setInterval bit.
+
     //Find sounds that need to be played
     let currentTime = Date.now();
     let songProgress = currentTime-this.timeStarted;
@@ -152,18 +207,28 @@ class Song
         }
       }
     }
-    //TODO: Check that song is complete
+
+    //Check if sound is complete
+    if (this.lastSoundPlayed >= this.activeScore.timeline.length && this.activeSounds.length === 0)
+    {
+      this.stop();
+      return false;
+    }
+    return true;
   }
 
   play()
   {
+    //Play the Score stored by this Song.
     this.activeScore = this.storedScore.getCopy();
     this.timeStarted = Date.now();
+    this.lastSoundPlayed = -1;
     //TODO: implement
   }
 
   stop()
   {
+    //Stop the song.
     for (let i = 0; i < this.activeScore.sounds.length; i++)
     {
       if (this.activeScore.sounds[i].playing)
@@ -178,15 +243,24 @@ class Song
 
 class MusicPlayer
 {
+  //Class for playing songs.
   constructor()
   {
     this.songs = [];
+    this.songPlaying = null;
     this.updateInterval = null;
   }
 
-  addSong(song)
+  addSong(song, callback)
   {
     this.songs.push(song);
+
+    //Used for UI stuff to make song creation asynchronous, avoiding any
+    //potential pauses.
+    if (callback !== undefined)
+    {
+      callback();
+    }
   }
 
   removeSong(index)
@@ -196,6 +270,7 @@ class MusicPlayer
 
   play(index)
   {
+    //Plays the song stored at this.songs index "index".
     this.songs[index].play();
 
     //dear gods this is clunky, but basically it's a hack to get setInterval working
@@ -203,10 +278,12 @@ class MusicPlayer
     //https://stackoverflow.com/a/43014276
     //https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function/bind
     this.updateInterval = setInterval(function () {this.songs[index].songTick() }.bind(this), 100);
+    this.songPlaying = index;
   }
 
   stop()
   {
+    //Stop the currently playing song.
     this.songs[index].stop();
     clearInterval(this.updateInterval);
   }
@@ -214,20 +291,189 @@ class MusicPlayer
 
 class MusicFactory
 {
+  //Class for creating and composing songs.
+
   constructor()
   {
 
   }
 
-  makeSongFromPlant(plant, callback)
+  plantCrawler(part, data, recursionLevel)
   {
+    //plantCrawler crawls the tree of a plant's parts to glean some info from
+    //it. Right now the things it reads are somewhat arbitrary for the first
+    //generation of my sound production, but it could go further later.
+
+    if (data === undefined)
+    {
+      data = {
+        maxThickness: -Infinity,
+        minThickness: Infinity,
+
+        maxLength: -Infinity,
+        minLength: Infinity,
+
+        maxSize: -Infinity,
+        minSize: Infinity,
+
+        mostChildren: 0,
+
+        deepestChild: -1,
+        partCount: -1,
+
+        partTypes: []
+      };
+    }
+
+    if (recursionLevel === undefined)
+    {
+      recursionLevel = 0;
+    }
+    else
+    {
+      recursionLevel++;
+    }
+
+    data.partCount++;
+
+    data.deepestChild = Math.max(data.deepestChild, recursionLevel);
+    data.mostChildren = Math.max(data.mostChildren, part.children.length);
+
+    if (!data.partTypes.includes(part.name))
+    {
+      data.partTypes.push(part.name);
+    }
+
+    data.minSize = Math.min(data.minSize, part.thickness*part.length);
+    data.maxSize = Math.max(data.maxSize, part.thickness*part.length);
+
+    data.maxLength = Math.max(data.maxLength, part.length);
+    data.minLength = Math.min(data.minLength, part.length);
+
+    data.maxThickness = Math.max(data.maxThickness, part.thickness);
+    data.minThickness = Math.min(data.minThickness, part.thickness);
+
+    for (let i = 0; i < part.children.length; i++)
+    {
+      data = this.plantCrawler(part.children[i], data, recursionLevel);
+    }
+
+    return data;
+  }
+
+  getAllChildrenToLevel(part, limit, ongoingList, depth)
+  {
+    //TODO: should probably be a function in the Part class?
+    if (depth === undefined)
+    {
+      depth = 0;
+    }
+    if (ongoingList === undefined)
+    {
+      ongoingList = [];
+    }
+
+    if (depth != 0)
+    {
+      ongoingList.push(part)
+    }
+
+    if (depth < limit)
+    {
+      for (let i = 0; i < part.children.length; i++)
+      {
+        this.getAllChildrenToLevel(part.children[i], limit, ongoingList, depth+1);
+      }
+    }
+
+    return ongoingList;
+  }
+
+  partSegmentSounds(part, totalLength, timeScalar)
+  {
+    let directChildren = this.getAllChildrenToLevel(part, 1);
+    let childrenWeight = [];
+
+    for (let i = 0; i < directChildren.length; i++)
+    {
+      //get number of total children
+      childrenWeight.push(this.getAllChildrenToLevel(directChildren[i], Infinity).length+1);
+    }
+
+    let weightSum = 0;
+
+    for (let i = 0; i < childrenWeight.length; i++)
+    {
+      weightSum += childrenWeight.length;
+    }
+
+    for (let i = 0; i < childrenWeight.length; i++)
+    {
+      childrenWeight[i] = (childrenWeight[i]*childrenWeight.length)/weightSum;
+    }
+
+    //Weighing the children is done, now let's assign them lengths
+
+    let soundLengths = [];
+
+    for (let i = 0; i < childrenWeight.length; i++)
+    {
+      soundLengths.push(totalLength*childrenWeight[i]);
+    }
+    console.log(soundLengths);
+
+    let soundTimes = [];
+    let soundTimeTotal = 0;
+    for (let i = 0; i < childrenWeight.length; i++)
+    {
+      soundTimes.push(soundTimeTotal);
+      soundTimeTotal += soundLengths[i];
+    }
+    console.log(soundTimes);
+
+    let sounds = [];
+    let score = new MusicScore();
+
+    for (let i = 0; i < soundTimes.length; i++)
+    {
+      let newSound = new SoundUnit("wave", soundLengths[i]*1.5, {
+        frequency: 220+(Math.random()*1000)
+      });
+
+      sounds.push(sounds);
+
+      score.addSound(newSound, soundTimes[i]+timeScalar);
+    }
+
+    console.log(score.timeline);
+    console.log(score.sounds.length);
+    return score;
+  }
+
+  makeSongFromPlant(plant, garden, callback)
+  {
+    //Makes a song from a plant. The first generation of Plant Sounds will not
+    //have a large amount of customizability, as it may need a lot more finetuning
+    //to get it to work that way.
+
     let song = new Song();
 
-    callback(song);
+    //PHASE 1: The walkabout.
+    //Find out some details about the plant.
+    let plantData = this.plantCrawler(plant.rootPart);
+
+    //PHASE 2: The creation.
+    //Big phase!
+
+    let newScore = this.partSegmentSounds(plant.rootPart, 5000, 0);
+    song.setScore(newScore);
+
+    return song;
   }
 
   makeTestSong()
   {
+    //Just returns a simple song for testing purposes.
     let song = new Song()
 
     let score = new MusicScore()

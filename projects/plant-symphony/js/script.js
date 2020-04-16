@@ -30,6 +30,7 @@ function clonePart(part) {
   newPart.stickPosition = part.stickPosition;
   newPart.relativeRotation = part.relativeRotation;
   newPart.partID = partCount;
+  newPart.name = part.name;
   newPart.model = part.model;
   partCount++;
 
