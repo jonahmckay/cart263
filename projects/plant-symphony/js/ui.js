@@ -31,8 +31,7 @@ let $rulesButton = $("<button class='barButton' title='Rules' id='rulesButton' o
 let $plantButton = $("<button class='barButton' title='Plant' id='plantButton' onclick='toggleDialog($plantDialog);'></button>")
 let $simulationButton = $("<button class='barButton' title='Simulation Settings' id='simulationButton' onclick='toggleDialog($simulationDialog);'></button>")
 let $musicButton = $("<button class='barButton' title='Music' id='musicButton' onclick='toggleDialog($musicDialog);'></button>")
-let $playButton = $("<button class='barButton' title='Start Growth' id='playButton' onclick='simulation.growthRunning = true;'></button>")
-let $pauseButton = $("<button class='barButton' title='Stop Growth' id='pauseButton' onclick='simulation.growthRunning = false;'></button>")
+let $togglePlayButton = $("<button class='barButton' title='Toggle Growth' id='togglePlayButton' onclick='toggleGrowthRunning();'></button>")
 let $infoButton = $("<button class='barButton' title='Info' id='infoButton' onclick='toggleDialog($infoDialog)'></button>")
 
 //Add buttons to the UI bar
@@ -41,9 +40,21 @@ $uiBar.append($rulesButton);
 $uiBar.append($plantButton);
 $uiBar.append($simulationButton);
 $uiBar.append($musicButton);
-$uiBar.append($playButton);
-$uiBar.append($pauseButton);
+$uiBar.append($togglePlayButton);
 $uiBar.append($infoButton);
+
+function toggleGrowthRunning()
+{
+  simulation.growthRunning = !simulation.growthRunning;
+  if (simulation.growthRunning)
+  {
+    $togglePlayButton.css("background-image", "url('../assets/images/pauseicon.png')");
+  }
+  else
+  {
+    $togglePlayButton.css("background-image", "url('../assets/images/playicon.png')");
+  }
+}
 
 function getFromListWithName(list, name)
 {
@@ -65,6 +76,7 @@ function getFromListWithName(list, name)
 
 function boundInput($input)
 {
+  //Makes an input conform to its minimum and maximum values.
   let value = parseFloat($input.val());
   let max = $input.attr("max");
   let min = $input.attr("min");
@@ -786,19 +798,70 @@ function initializeMusicDialog()
   let $makeSongButton = $("<button id='musicDialogMakeSongButton'>Make Song</button>'");
   $makeSongButton.on("click", function () {
     musicPlayer.addSong(musicFactory.makeSongFromPlant(garden.plants[0], garden));
+    initializeMusicDialog();
   });
 
   $musicDialog.append($makeSongButton);
 
+  let $modifierRow = $("<div id='musicDialogModifierRow'></div>");
+
+  $modifierRow.append("Note Space Modifier: ")
+  let $spaceModifier = $("<input type='number' class='shortInput' id='musicDialogSpaceModifier' min='0'></input>");
+  $spaceModifier.val(musicFactory.noteSpaceModifier);
+  $spaceModifier.on("change", function () {
+    boundInput($spaceModifier);
+    musicFactory.noteSpaceModifier = $spaceModifier.val()
+  });
+  $modifierRow.append($spaceModifier);
+
+  $modifierRow.append("<p></p>");
+
+  $modifierRow.append("Note Length Modifier: ")
+  let $lengthModifier = $("<input type='number' class='shortInput' id='musicDialogLengthModifier' min='0.001'></input>");
+  $lengthModifier.val(musicFactory.noteLengthModifier);
+  $lengthModifier.on("change", function () {
+    boundInput($lengthModifier);
+    musicFactory.noteLengthModifier = $lengthModifier.val()
+  });
+  $modifierRow.append($lengthModifier);
+
+  $musicDialog.append($modifierRow);
+
+
+
+  let $playStopRow = $("<div id='musicDialogPlayStopRow'></div>");
+
   let $playSongButton = $("<button id='musicDialogPlaySongButton'>Play Song</button>'");
+  $playSongButton.attr("disabled", musicPlayer.songs.length < 1)
   $playSongButton.on("click", function () { musicPlayer.play(musicPlayer.songs.length-1); });
 
-  $musicDialog.append($playSongButton);
+  $playStopRow.append($playSongButton);
 
   let $stopSongButton = $("<button id='musicDialogStopSongButton'>Stop Song</button>'");
   $stopSongButton.on("click", function () { musicPlayer.stop(musicPlayer.songPlaying); });
 
-  $musicDialog.append($stopSongButton);
+  $playStopRow.append($stopSongButton);
+
+  $musicDialog.append($playStopRow);
+
+
+
+  let $volumeRow = $("<div id='musicDialogVolumeRow'>Volume: </div>");
+
+  let $volumeSlider = $("<input type='range' id='musicDialogVolume' min='0' max='100'></input>");
+  $volumeSlider.val(Pizzicato.volume*100);
+  $volumeSlider.on("change", function () { Pizzicato.volume = parseFloat($volumeSlider.val())/100});
+  $volumeRow.append($volumeSlider);
+
+  $musicDialog.append($volumeRow);
+
+
+
+  if (musicPlayer.songs.length > 0)
+  {
+    let $songLengthRow = $(`<div id='musicDialogLengthRow'>Song Length: ${musicPlayer.songs[musicPlayer.songs.length-1].getLength()/1000} seconds</div>`);
+    $musicDialog.append($songLengthRow);
+  }
 }
 
 function initializeInfoDialog()
@@ -869,7 +932,8 @@ function firstTimeCheck()
 
 function openFirstTimeDialog()
 {
-  toggleDialog($infoDialog);
+  //toggleDialog($infoDialog);
+  //TODO: Implement something more aestheticly pleasing
 }
 
 function setupUI() {

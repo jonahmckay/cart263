@@ -13,6 +13,11 @@ body {
   outline: none;
 }
 
+.barButton:hover
+{
+  opacity: 0.8;
+}
+
 #UIBar
 {
   width: 100%;
@@ -57,13 +62,7 @@ body {
   background-size: cover;
 }
 
-#playButton
-{
-  background-image: url('../assets/images/playicon.png');
-  background-size: cover;
-}
-
-#pauseButton
+#togglePlayButton
 {
   background-image: url('../assets/images/pauseicon.png');
   background-size: cover;
