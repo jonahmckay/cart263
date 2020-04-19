@@ -1,17 +1,23 @@
 "use strict";
 
+/********************************************************************
+
+music.js script: Defines the music and sound classes.
+
+*********************************************************************/
+
 class SoundUnit
 {
   //An abstraction of a sound. Exists primarily because I don't want to fully
   //commit to using Pizzicato and would like some abstraction in my system.
   //Can be played and stopped.
-  constructor(type, length, options)
+  constructor(type, soundLength, options)
   {
     //Type corresponds to "source" in the Pizzicato.Sound constructor.
     this.type = type;
 
-    //Length is how long the sound will be played, in ms.
-    this.length = length;
+    //soundLength is how long the sound will be played, in ms.
+    this.soundLength = soundLength;
 
     //used for Pizzicato sound objects
     this.options = options;
@@ -27,6 +33,7 @@ class SoundUnit
 
   addEffect(effect)
   {
+    //Adds an effect to the sound.
     this.effects.push(effect);
   }
 
@@ -40,14 +47,6 @@ class SoundUnit
       options: this.options
     });
 
-    var delay = new Pizzicato.Effects.Delay({
-    feedback: 0.3,
-    time: 0.2,
-    mix: 0.3
-    });
-
-    this.sound.addEffect(delay);
-
     for (let i = 0; i < this.effects.length; i++)
     {
       this.sound.addEffect(this.effects[i]);
@@ -57,7 +56,7 @@ class SoundUnit
   lengthCheck(currentTime)
   {
     //Checks to see whether the sound has played for at least its length.
-    if ((currentTime-this.length) < this.timeStarted)
+    if ((currentTime-this.soundLength) < this.timeStarted)
     {
       return false;
     }
@@ -78,16 +77,18 @@ class SoundUnit
   stop()
   {
     //Stops this sound.
-
-    this.sound.stop();
-    this.playing = false;
-    this.timeStarted = null;
+    if (this.playing)
+    {
+      this.sound.stop();
+      this.playing = false;
+      this.timeStarted = null;
+    }
   }
 
   getCopy()
   {
     //Returns a copy of this sound.
-    let newSound = new SoundUnit(this.type, this.length, this.options);
+    let newSound = new SoundUnit(this.type, this.soundLength, this.options);
     return newSound;
   }
 
@@ -256,7 +257,7 @@ class Song
     //Check if sound is complete
     if (this.lastSoundPlayed >= this.activeScore.timeline.length-1 && this.activeSounds.length === 0)
     {
-      setTimeout(function () { this.stop() }.bind(this), 2000);
+      setTimeout(function () { this.stop() }.bind(this), 1000);
 
       return false;
     }
@@ -292,6 +293,15 @@ class Song
 
     this.activeScore = null;
   }
+
+  getLength()
+  {
+    //Returns the length of the song in milliseconds.
+    //TODO: at the moment this returns when the last note starts playing, which
+    //is a decent approximant but does not actually reflect the true length of
+    //the song.
+    return this.storedScore.timeline[this.storedScore.timeline.length-1];
+  }
 }
 
 class MusicPlayer
@@ -323,25 +333,33 @@ class MusicPlayer
 
   checkInterval(result)
   {
+    //Used for checking the result of the songTick interval when a song is
+    //playing. If it returns false, stop the song after a second (to avoid
+    //echo effects from suddenly cutting out)
     if (!result)
     {
-      setTimeout(function () { this.stop() }.bind(this), 2000);
+      setTimeout(function () { this.stop() }.bind(this), 1000);
     }
   }
+
   play(index)
   {
     if (this.songPlaying != null)
     {
-      stop();
+      this.stop();
     }
     //Plays the song stored at this.songs index "index".
     this.songs[index].play();
 
+    if (this.updateInterval != null)
+    {
+      clearInterval(this.updateInterval);
+    }
     //dear gods this is clunky, but basically it's a hack to get setInterval working
     //because it messes with what "this" is. bind() solves this.
     //https://stackoverflow.com/a/43014276
     //https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function/bind
-    this.updateInterval = setInterval(function () {this.checkInterval(this.songs[index].songTick()); }.bind(this), 100);
+    this.updateInterval = setInterval(function () {this.checkInterval(this.songs[index].songTick()); }.bind(this), 10);
     this.songPlaying = index;
   }
 
@@ -363,7 +381,10 @@ class MusicFactory
 
   constructor()
   {
-
+    //Defines how much space there is between notes.
+    this.noteSpaceModifier = 400;
+    //Defines the length of the notes themselves.
+    this.noteLengthModifier = 1;
   }
 
   plantCrawler(part, data, recursionLevel)
@@ -514,20 +535,32 @@ class MusicFactory
       ongoingScore = new MusicScore();
     }
 
+    //Create the SoundUnit.
+    //TODO: Make this more sophisticated, different ways to map different part
+    //variables to things like frequency
     for (let i = 0; i < soundTimes.length; i++)
     {
-      let newSound = new SoundUnit("wave", soundLengths[i]/2, {
+      let newSound = new SoundUnit("wave", (soundLengths[i]/2)*this.noteLengthModifier, {
         frequency: 523+(part.children[i].relativeRotation.y % Math.PI*2)*73.85,
-        volume: (1-(currentDepth/totalDepth))-0.5
+        volume: Math.max((1-(currentDepth/totalDepth))-0.3, 0.1)
       });
       newSound.attack = 1.5;
       newSound.release = 1.5;
+
+      //Sound effects
 
       var stereoPanner = new Pizzicato.Effects.StereoPanner({
         pan: (part.stickPosition*2)-1
       });
 
+      var delay = new Pizzicato.Effects.Delay({
+      feedback: 0.3,
+      time: 0.2,
+      mix: 0.3
+      });
+
       newSound.addEffect(stereoPanner);
+      newSound.addEffect(delay);
 
       sounds.push(sounds);
 
@@ -539,6 +572,8 @@ class MusicFactory
 
   getAllSegmentSounds(part, totalLength, timeScalar, ongoingScore, plantData, currentDepth)
   {
+    //Current main function for 1st generation sound creation
+
     if (ongoingScore === undefined)
     {
       ongoingScore = new MusicScore();
@@ -591,8 +626,7 @@ class MusicFactory
     //PHASE 2: The creation.
     //Big phase!
 
-    //let newScore = this.partSegmentSounds(plant.rootPart, 5000, 0);
-    let newScore = this.getAllSegmentSounds(plant.rootPart, plantData.partCount*400, 0, new MusicScore(), plantData, 0)
+    let newScore = this.getAllSegmentSounds(plant.rootPart, plantData.partCount*this.noteSpaceModifier, 0, new MusicScore(), plantData, 0)
     song.setScore(newScore);
 
     return song;
@@ -616,6 +650,7 @@ class MusicFactory
 
 let musicPlayer = new MusicPlayer();
 let musicFactory =  new MusicFactory();
+Pizzicato.volume = 0.5;
 
 function testMusic()
 {

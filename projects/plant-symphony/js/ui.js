@@ -31,8 +31,7 @@ let $rulesButton = $("<button class='barButton' title='Rules' id='rulesButton' o
 let $plantButton = $("<button class='barButton' title='Plant' id='plantButton' onclick='toggleDialog($plantDialog);'></button>")
 let $simulationButton = $("<button class='barButton' title='Simulation Settings' id='simulationButton' onclick='toggleDialog($simulationDialog);'></button>")
 let $musicButton = $("<button class='barButton' title='Music' id='musicButton' onclick='toggleDialog($musicDialog);'></button>")
-let $playButton = $("<button class='barButton' title='Start Growth' id='playButton' onclick='simulation.growthRunning = true;'></button>")
-let $pauseButton = $("<button class='barButton' title='Stop Growth' id='pauseButton' onclick='simulation.growthRunning = false;'></button>")
+let $togglePlayButton = $("<button class='barButton' title='Toggle Growth' id='togglePlayButton' onclick='toggleGrowthRunning();'></button>")
 let $infoButton = $("<button class='barButton' title='Info' id='infoButton' onclick='toggleDialog($infoDialog)'></button>")
 
 //Add buttons to the UI bar
@@ -41,9 +40,21 @@ $uiBar.append($rulesButton);
 $uiBar.append($plantButton);
 $uiBar.append($simulationButton);
 $uiBar.append($musicButton);
-$uiBar.append($playButton);
-$uiBar.append($pauseButton);
 $uiBar.append($infoButton);
+$uiBar.append($togglePlayButton);
+
+function toggleGrowthRunning()
+{
+  simulation.growthRunning = !simulation.growthRunning;
+  if (simulation.growthRunning)
+  {
+    $togglePlayButton.css("background-image", "url('../assets/images/pauseicon.png')");
+  }
+  else
+  {
+    $togglePlayButton.css("background-image", "url('../assets/images/playicon.png')");
+  }
+}
 
 function getFromListWithName(list, name)
 {
@@ -61,6 +72,23 @@ function getFromListWithName(list, name)
     }
   }
   return null;
+}
+
+function boundInput($input)
+{
+  //Makes an input conform to its minimum and maximum values.
+  let value = parseFloat($input.val());
+  let max = $input.attr("max");
+  let min = $input.attr("min");
+
+  if (max !== undefined && value > max)
+  {
+    $input.val(max);
+  }
+  else if (min !== undefined && value < min)
+  {
+    $input.val(min);
+  }
 }
 
 function nameExists(name)
@@ -473,8 +501,8 @@ function initializePartsDialog()
 
   let $partOptions = $("<div id='partDialogOptions'</div>");
 
-  let $baseLengthInput = $("<input class='shortInput' id=partDialogBaseLength></input>");
-  let $baseThicknessInput = $("<input class='shortInput' id=partDialogBaseThickness></input>");
+  let $baseLengthInput = $("<input type='number' class='shortInput' id=partDialogBaseLength min='0' max='100'></input>");
+  let $baseThicknessInput = $("<input type='number' class='shortInput' id=partDialogBaseThickness min='0' max='100'></input>");
 
   let $lengthBlock = $("<span>Base Length: </span></br>");
   let $thicknessBlock = $("<span>Base Thickness: </span></br>");
@@ -482,8 +510,12 @@ function initializePartsDialog()
   $baseLengthInput.val(selectedPart.length);
   $baseThicknessInput.val(selectedPart.thickness);
 
-  $baseLengthInput.on("change", function () { selectedPart.length = parseFloat($("#partDialogBaseLength").val());});
-  $baseThicknessInput.on("change", function () { selectedPart.thickness = parseFloat($("#partDialogBaseThickness").val()); });
+  $baseLengthInput.on("change", function () {
+    boundInput($baseLengthInput);
+    selectedPart.length = parseFloat($("#partDialogBaseLength").val());});
+  $baseThicknessInput.on("change", function () {
+    boundInput($baseThicknessInput);
+    selectedPart.thickness = parseFloat($("#partDialogBaseThickness").val()); });
 
   $lengthBlock.append($baseLengthInput);
   $thicknessBlock.append($baseThicknessInput);
@@ -571,9 +603,11 @@ function initializeRulesDialog()
 
   let $baseChanceLine = $("<p>Base Chance: </p>");
 
-  let $baseChanceInput = $("<input id=rulesDialogBaseChance></input>");
+  let $baseChanceInput = $("<input type='number' id=rulesDialogBaseChance min='0' max='1'></input>");
   $baseChanceInput.val(selectedRule.baseChance);
-  $baseChanceInput.on("change", function () { selectedRule.baseChance = parseFloat($baseChanceInput.val());
+  $baseChanceInput.on("change", function () {
+  boundInput($baseChanceInput);
+  selectedRule.baseChance = parseFloat($baseChanceInput.val());
   updateSingleRule(selectedRule.name, selectedRule);});
 
   $baseChanceLine.append($baseChanceInput);
@@ -604,10 +638,11 @@ function initializeRulesDialog()
 
     let $XRotationLine = $("<div id='rulesDialogXRotationLine'></div>");
     $XRotationLine.append("Base X Rotation: ");
-    let $XRotationBaseInput = $("<input class='shortInput' id=rulesDialogXRotationBaseInput></input>");
+    let $XRotationBaseInput = $("<input type='number' class='shortInput' id=rulesDialogXRotationBaseInput min='-360' max='360'></input>");
     $XRotationBaseInput.val(selectedRule.baseXRotation);
-    $XRotationBaseInput.on("change", function () {
-      selectedRule.baseXRotation = parseFloat($XRotationBaseInput.val()); console.log("?"); updateSingleRule(selectedRule.name, selectedRule);});
+    $XRotationBaseInput.on("change", function () { boundInput($XRotationBaseInput);
+      selectedRule.baseXRotation = parseFloat($XRotationBaseInput.val());
+      updateSingleRule(selectedRule.name, selectedRule);});
 
     $XRotationLine.append($XRotationBaseInput);
 
@@ -615,10 +650,11 @@ function initializeRulesDialog()
 
     $XRotationLine.append("X Rotation Deviation Range: ");
 
-    let $XRotationDeviationInput = $("<input class='shortInput' id=rulesDialogXRotationDeviationInput></input>");
+    let $XRotationDeviationInput = $("<input type='number' class='shortInput' id=rulesDialogXRotationDeviationInput min='0' max='360'></input>");
     $XRotationDeviationInput.val(selectedRule.xRotationVariability);
-    $XRotationDeviationInput.on("change", function () {
-      selectedRule.xRotationVariability = parseFloat($XRotationDeviationInput.val()); updateSingleRule(selectedRule.name, selectedRule);});
+    $XRotationDeviationInput.on("change", function () { boundInput($XRotationDeviationInput);
+      selectedRule.xRotationVariability = parseFloat($XRotationDeviationInput.val());
+      updateSingleRule(selectedRule.name, selectedRule);});
     $XRotationLine.append($XRotationDeviationInput);
 
     $rulesDialog.append($XRotationLine);
@@ -626,10 +662,11 @@ function initializeRulesDialog()
 
     let $YRotationLine = $("<div id='rulesDialogYRotationLine'></div>");
     $YRotationLine.append("Base Y Rotation: ");
-    let $YRotationBaseInput = $("<input class='shortInput' id=rulesDialogYRotationBaseInput></input>");
+    let $YRotationBaseInput = $("<input type='number' class='shortInput' id=rulesDialogYRotationBaseInput min='-360' max='360'></input>");
     $YRotationBaseInput.val(selectedRule.baseYRotation);
-    $YRotationBaseInput.on("change", function () {
-      selectedRule.baseYRotation = parseFloat($YRotationBaseInput.val()); updateSingleRule(selectedRule.name, selectedRule);});
+    $YRotationBaseInput.on("change", function () { boundInput($YRotationBaseInput);
+      selectedRule.baseYRotation = parseFloat($YRotationBaseInput.val());
+      updateSingleRule(selectedRule.name, selectedRule);});
 
     $YRotationLine.append($YRotationBaseInput);
 
@@ -637,10 +674,11 @@ function initializeRulesDialog()
 
     $YRotationLine.append("Y Rotation Deviation Range: ");
 
-    let $YRotationDeviationInput = $("<input class='shortInput' id=rulesDialogYRotationDeviationInput></input>");
+    let $YRotationDeviationInput = $("<input type='number' class='shortInput' id=rulesDialogYRotationDeviationInput min='0' max='360'></input>");
     $YRotationDeviationInput.val(selectedRule.yRotationVariability);
-    $YRotationDeviationInput.on("change", function () {
-      selectedRule.yRotationVariability = parseFloat($YRotationDeviationInput.val()); updateSingleRule(selectedRule.name, selectedRule);});
+    $YRotationDeviationInput.on("change", function () { boundInput($YRotationDeviationInput);
+      selectedRule.yRotationVariability = parseFloat($YRotationDeviationInput.val());
+      updateSingleRule(selectedRule.name, selectedRule);});
     $YRotationLine.append($YRotationDeviationInput);
 
     $rulesDialog.append($YRotationLine);
@@ -648,9 +686,9 @@ function initializeRulesDialog()
 
     let $ZRotationLine = $("<div id='rulesDialogZRotationLine'></div>");
     $ZRotationLine.append("Base Z Rotation: ");
-    let $ZRotationBaseInput = $("<input class='shortInput' id=rulesDialogZRotationBaseInput></input>");
+    let $ZRotationBaseInput = $("<input type='number' class='shortInput' id=rulesDialogZRotationBaseInput min='-360' max='360'></input>");
     $ZRotationBaseInput.val(selectedRule.baseZRotation);
-    $ZRotationBaseInput.on("change", function () {
+    $ZRotationBaseInput.on("change", function () { boundInput($ZRotationBaseInput);
       selectedRule.baseZRotation = parseFloat($ZRotationBaseInput.val()); updateSingleRule(selectedRule.name, selectedRule);});
 
     $ZRotationLine.append($ZRotationBaseInput);
@@ -659,9 +697,9 @@ function initializeRulesDialog()
 
     $ZRotationLine.append("Z Rotation Deviation Range: ");
 
-    let $ZRotationDeviationInput = $("<input class='shortInput' id=rulesDialogZRotationDeviationInput></input>");
+    let $ZRotationDeviationInput = $("<input type='number' class='shortInput' id=rulesDialogZRotationDeviationInput min='0' max='360'></input>");
     $ZRotationDeviationInput.val(selectedRule.zRotationVariability);
-    $ZRotationDeviationInput.on("change", function () {
+    $ZRotationDeviationInput.on("change", function () { boundInput($ZRotationDeviationInput);
       selectedRule.zRotationVariability = parseFloat($ZRotationDeviationInput.val()); updateSingleRule(selectedRule.name, selectedRule);});
     $ZRotationLine.append($ZRotationDeviationInput);
 
@@ -672,18 +710,20 @@ function initializeRulesDialog()
     let $stickPositionLine = $("<div id='rulesDialogStickPositionLine'></div>");
 
     $stickPositionLine.append("Stick Position Bounds: ")
-    let $lowerStickPositionInput = $("<input class='shortInput' id=rulesDialogLowerStickPositionInput></input>");
+    let $lowerStickPositionInput = $("<input type='number' class='shortInput' id=rulesDialogLowerStickPositionInput min='-1' max='2'></input>");
     $lowerStickPositionInput.val(selectedRule.stickPositionLowerBound);
-    $lowerStickPositionInput.on("change", function () {
-      selectedRule.stickPositionLowerBound = parseFloat($lowerStickPositionInput.val()); updateSingleRule(selectedRule.name, selectedRule);});
+    $lowerStickPositionInput.on("change", function () { boundInput($lowerStickPositionInput);
+      selectedRule.stickPositionLowerBound = parseFloat($lowerStickPositionInput.val());
+      updateSingleRule(selectedRule.name, selectedRule);});
 
     $stickPositionLine.append($lowerStickPositionInput);
     $stickPositionLine.append("-");
 
-    let $upperStickPositionInput = $("<input class='shortInput' id=rulesDialogUpperStickPositionInput></input>");
+    let $upperStickPositionInput = $("<input type='number' class='shortInput' id=rulesDialogUpperStickPositionInput min='-1' max='2'></input>");
     $upperStickPositionInput.val(selectedRule.stickPositionUpperBound);
-    $upperStickPositionInput.on("change", function () {
-      selectedRule.stickPositionUpperBound = parseFloat($upperStickPositionInput.val()); updateSingleRule(selectedRule.name, selectedRule);});
+    $upperStickPositionInput.on("change", function () { boundInput($upperStickPositionInput);
+      selectedRule.stickPositionUpperBound = parseFloat($upperStickPositionInput.val());
+      updateSingleRule(selectedRule.name, selectedRule);});
     $stickPositionLine.append($upperStickPositionInput);
 
     $rulesDialog.append($stickPositionLine);
@@ -694,18 +734,18 @@ function initializeRulesDialog()
   else if (selectedRule.ruleType === "growthRule")
   {
     let $lengthLine = $("<p>Length Delta: </p>");
-    let $lengthDeltaInput = $("<input class='shortInput' id=rulesDialogLengthDelta></input>");
+    let $lengthDeltaInput = $("<input type='number' class='shortInput' id=rulesDialogLengthDelta min='-10' max='10'></input>");
     $lengthDeltaInput.val(selectedRule.lengthDelta);
-    $lengthDeltaInput.on("change", function () {
+    $lengthDeltaInput.on("change", function () { boundInput($lengthDeltaInput);
       selectedRule.lengthDelta = parseFloat($lengthDeltaInput.val()); updateSingleRule(selectedRule.name, selectedRule);});
 
     $lengthLine.append($lengthDeltaInput);
     $ruleOptions.append($lengthLine);
 
     let $thicknessLine = $("<p>Thickness Delta: </p>");
-    let $thicknessDeltaInput = $("<input class='shortInput' id='rulesDialogThicknessDelta'></input>");
+    let $thicknessDeltaInput = $("<input type='number' class='shortInput' id='rulesDialogThicknessDelta' min='-10' max='10'></input>");
     $thicknessDeltaInput.val(selectedRule.thicknessDelta);
-    $thicknessDeltaInput.on("change", function () {
+    $thicknessDeltaInput.on("change", function () { boundInput($thicknessDeltaInput);
       selectedRule.thicknessDelta = parseFloat($thicknessDeltaInput.val()); updateSingleRule(selectedRule.name, selectedRule); });
 
     $thicknessLine.append($thicknessDeltaInput);
@@ -743,9 +783,11 @@ function initializeSimulationDialog()
 
   $simulationDialog.append("<p>A-Frame ticks per growth tick:</p>");
 
-  let $framesPerGrowth = $("<input id='simulationDialogFramesPerGrowthInput'></input>");
+  let $framesPerGrowth = $("<input type='number' id='simulationDialogFramesPerGrowthInput' min='1'></input>");
   $framesPerGrowth.val(simulation.framesPerGrowth);
-  $framesPerGrowth.on("change", function () { simulation.framesPerGrowth = parseInt($framesPerGrowth.val());});
+  $framesPerGrowth.on("change", function () {
+    boundInput($framesPerGrowth);
+    simulation.framesPerGrowth = parseInt($framesPerGrowth.val());});
 
   $simulationDialog.append($framesPerGrowth);
 }
@@ -756,19 +798,70 @@ function initializeMusicDialog()
   let $makeSongButton = $("<button id='musicDialogMakeSongButton'>Make Song</button>'");
   $makeSongButton.on("click", function () {
     musicPlayer.addSong(musicFactory.makeSongFromPlant(garden.plants[0], garden));
+    initializeMusicDialog();
   });
 
   $musicDialog.append($makeSongButton);
 
+  let $modifierRow = $("<div id='musicDialogModifierRow'></div>");
+
+  $modifierRow.append("Note Space Modifier: ")
+  let $spaceModifier = $("<input type='number' class='shortInput' id='musicDialogSpaceModifier' min='0'></input>");
+  $spaceModifier.val(musicFactory.noteSpaceModifier);
+  $spaceModifier.on("change", function () {
+    boundInput($spaceModifier);
+    musicFactory.noteSpaceModifier = $spaceModifier.val()
+  });
+  $modifierRow.append($spaceModifier);
+
+  $modifierRow.append("<p></p>");
+
+  $modifierRow.append("Note Length Modifier: ")
+  let $lengthModifier = $("<input type='number' class='shortInput' id='musicDialogLengthModifier' min='0.001'></input>");
+  $lengthModifier.val(musicFactory.noteLengthModifier);
+  $lengthModifier.on("change", function () {
+    boundInput($lengthModifier);
+    musicFactory.noteLengthModifier = $lengthModifier.val()
+  });
+  $modifierRow.append($lengthModifier);
+
+  $musicDialog.append($modifierRow);
+
+
+
+  let $playStopRow = $("<div id='musicDialogPlayStopRow'></div>");
+
   let $playSongButton = $("<button id='musicDialogPlaySongButton'>Play Song</button>'");
+  $playSongButton.attr("disabled", musicPlayer.songs.length < 1)
   $playSongButton.on("click", function () { musicPlayer.play(musicPlayer.songs.length-1); });
 
-  $musicDialog.append($playSongButton);
+  $playStopRow.append($playSongButton);
 
   let $stopSongButton = $("<button id='musicDialogStopSongButton'>Stop Song</button>'");
   $stopSongButton.on("click", function () { musicPlayer.stop(musicPlayer.songPlaying); });
 
-  $musicDialog.append($stopSongButton);
+  $playStopRow.append($stopSongButton);
+
+  $musicDialog.append($playStopRow);
+
+
+
+  let $volumeRow = $("<div id='musicDialogVolumeRow'>Volume: </div>");
+
+  let $volumeSlider = $("<input type='range' id='musicDialogVolume' min='0' max='100'></input>");
+  $volumeSlider.val(Pizzicato.volume*100);
+  $volumeSlider.on("change", function () { Pizzicato.volume = parseFloat($volumeSlider.val())/100});
+  $volumeRow.append($volumeSlider);
+
+  $musicDialog.append($volumeRow);
+
+
+
+  if (musicPlayer.songs.length > 0)
+  {
+    let $songLengthRow = $(`<div id='musicDialogLengthRow'>Song Length: ${musicPlayer.songs[musicPlayer.songs.length-1].getLength()/1000} seconds</div>`);
+    $musicDialog.append($songLengthRow);
+  }
 }
 
 function initializeInfoDialog()
@@ -839,7 +932,8 @@ function firstTimeCheck()
 
 function openFirstTimeDialog()
 {
-  toggleDialog($infoDialog);
+  //toggleDialog($infoDialog);
+  //TODO: Implement something more aestheticly pleasing
 }
 
 function setupUI() {
