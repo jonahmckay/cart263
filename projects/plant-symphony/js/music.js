@@ -78,10 +78,12 @@ class SoundUnit
   stop()
   {
     //Stops this sound.
-
-    this.sound.stop();
-    this.playing = false;
-    this.timeStarted = null;
+    if (this.playing)
+    {
+      this.sound.stop();
+      this.playing = false;
+      this.timeStarted = null;
+    }
   }
 
   getCopy()
@@ -256,7 +258,7 @@ class Song
     //Check if sound is complete
     if (this.lastSoundPlayed >= this.activeScore.timeline.length-1 && this.activeSounds.length === 0)
     {
-      setTimeout(function () { this.stop() }.bind(this), 2000);
+      setTimeout(function () { this.stop() }.bind(this), 1000);
 
       return false;
     }
@@ -325,18 +327,23 @@ class MusicPlayer
   {
     if (!result)
     {
-      setTimeout(function () { this.stop() }.bind(this), 2000);
+      setTimeout(function () { this.stop() }.bind(this), 1000);
     }
   }
+
   play(index)
   {
     if (this.songPlaying != null)
     {
-      stop();
+      this.stop();
     }
     //Plays the song stored at this.songs index "index".
     this.songs[index].play();
 
+    if (this.updateInterval != null)
+    {
+      clearInterval(this.updateInterval);
+    }
     //dear gods this is clunky, but basically it's a hack to get setInterval working
     //because it messes with what "this" is. bind() solves this.
     //https://stackoverflow.com/a/43014276
@@ -363,7 +370,7 @@ class MusicFactory
 
   constructor()
   {
-
+    this.lengthModifier = 400;
   }
 
   plantCrawler(part, data, recursionLevel)
@@ -518,7 +525,7 @@ class MusicFactory
     {
       let newSound = new SoundUnit("wave", soundLengths[i]/2, {
         frequency: 523+(part.children[i].relativeRotation.y % Math.PI*2)*73.85,
-        volume: (1-(currentDepth/totalDepth))-0.5
+        volume: Math.max((1-(currentDepth/totalDepth))-0.3, 0.1)
       });
       newSound.attack = 1.5;
       newSound.release = 1.5;
@@ -591,8 +598,7 @@ class MusicFactory
     //PHASE 2: The creation.
     //Big phase!
 
-    //let newScore = this.partSegmentSounds(plant.rootPart, 5000, 0);
-    let newScore = this.getAllSegmentSounds(plant.rootPart, plantData.partCount*400, 0, new MusicScore(), plantData, 0)
+    let newScore = this.getAllSegmentSounds(plant.rootPart, plantData.partCount*this.lengthModifier, 0, new MusicScore(), plantData, 0)
     song.setScore(newScore);
 
     return song;
