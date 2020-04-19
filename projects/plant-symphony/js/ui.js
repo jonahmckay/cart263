@@ -48,11 +48,11 @@ function toggleGrowthRunning()
   simulation.growthRunning = !simulation.growthRunning;
   if (simulation.growthRunning)
   {
-    $togglePlayButton.css("background-image", "url('../assets/images/pauseicon.png')");
+    $togglePlayButton.css("background-image", "url('assets/images/pauseicon.png')");
   }
   else
   {
-    $togglePlayButton.css("background-image", "url('../assets/images/playicon.png')");
+    $togglePlayButton.css("background-image", "url('assets/images/playicon.png')");
   }
 }
 
