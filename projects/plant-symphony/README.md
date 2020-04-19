@@ -1,8 +1,8 @@
-#Plant Symphony
+# Plant Symphony
 
-###Made by Jonah McKay
+### Made by Jonah McKay
 
-##Brief Description
+## Brief Description
 
 Plant Symphony is a toy application that allows you to play with procedural
 generation of plant-like structures, as well as procedural music generation.
@@ -18,7 +18,7 @@ present, things like the user interface are more rough than would be ideal,
 and it is missing some features that I would like to implement some time in the
 future.
 
-##Technical Bits
+## Technical Bits
 
 The site runs entirely client side, although some browsers may require the site
 to be run by a server as it accesses external libraries from the Internet. Plant
@@ -40,7 +40,7 @@ offline, you'll have to download and refer to local copies of these libraries.
 Otherwise, once the relevant files are loaded it should require no connection to
 the Internet.
 
-##Artist's Statement
+## Artist's Statement
 
 Plant Symphony is designed as a toy-tool for exploring procedural generation and
 data mapping. The surreal and abstract representation of a plant-growth in a field
