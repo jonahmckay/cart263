@@ -40,8 +40,8 @@ $uiBar.append($rulesButton);
 $uiBar.append($plantButton);
 $uiBar.append($simulationButton);
 $uiBar.append($musicButton);
-$uiBar.append($togglePlayButton);
 $uiBar.append($infoButton);
+$uiBar.append($togglePlayButton);
 
 function toggleGrowthRunning()
 {
