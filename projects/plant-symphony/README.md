@@ -29,9 +29,9 @@ however I plan to move it to its own repository shortly after class submission.)
 
 It uses the following JavaScript libraries/frameworks:
 
-[A-Frame](https://aframe.io)
-[jQuery](https://jquery.com) and [jQuery UI](https://jqueryui.com)
-[Pizzicato](https://github.com/alemangui/pizzicato)
+- [A-Frame](https://aframe.io)
+- [jQuery](https://jquery.com) and [jQuery UI](https://jqueryui.com)
+- [Pizzicato](https://github.com/alemangui/pizzicato)
 
 All of these libraries are, as of April 16 2020, under the MIT License, as is
 this program. These libraries are not bundled with this repository, and are
